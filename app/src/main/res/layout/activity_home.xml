@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/home"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".ui.home.HomeActivity"
+    app:layout_constraintHorizontal_chainStyle="spread_inside">
+
+    <ImageView
+        android:id="@+id/home_menu"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:layout_marginTop="20dp"
+        android:layout_marginStart="16dp"
+        android:src="@drawable/baseline_menu_24"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <TextView
+        android:id="@+id/home_concerned"
+        android:text="关注"
+        android:layout_width="0dp"
+        android:layout_height="40dp"
+        android:textSize="20sp"
+        android:fontFamily="sans-serif"
+        android:textStyle="bold"
+        android:gravity="center|bottom"
+        android:textColor="#000000"
+        android:layout_marginStart="40dp"
+        app:layout_constraintStart_toEndOf="@id/home_menu"
+        app:layout_constraintEnd_toStartOf="@id/home_recommend"
+        app:layout_constraintTop_toTopOf="@id/home_menu"
+        app:layout_constraintHorizontal_chainStyle="spread" />
+
+    <TextView
+        android:id="@+id/home_recommend"
+        android:text="发现"
+        android:layout_width="0dp"
+        android:layout_height="40dp"
+        android:textSize="20sp"
+        android:fontFamily="sans-serif"
+        android:textStyle="bold"
+        android:gravity="center|bottom"
+        android:textColor="#000000"
+        app:layout_constraintStart_toEndOf="@id/home_concerned"
+        app:layout_constraintEnd_toStartOf="@id/home_city"
+        app:layout_constraintTop_toTopOf="@id/home_menu" />
+
+    <TextView
+        android:id="@+id/home_city"
+        android:text="同城"
+        android:layout_width="0dp"
+        android:layout_height="40dp"
+        android:textSize="20sp"
+        android:fontFamily="sans-serif"
+        android:textStyle="bold"
+        android:gravity="center|bottom"
+        android:textColor="#000000"
+        android:layout_marginEnd="40dp"
+        app:layout_constraintStart_toEndOf="@id/home_recommend"
+        app:layout_constraintEnd_toStartOf="@id/home_search"
+        app:layout_constraintTop_toTopOf="@id/home_menu" />
+    <ImageView
+        android:id="@+id/home_search"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:layout_marginEnd="16dp"
+        android:src="@drawable/baseline_search_24"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="@id/home_menu" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>
