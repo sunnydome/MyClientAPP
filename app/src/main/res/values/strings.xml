@@ -1,3 +1,5 @@
 <resources>
     <string name="app_name">My App</string>
+    <string name="feed_default_description">这里是帖子描述，这里展示作品标题内容</string>
+    <string name="feed_default_name">用户名</string>
 </resources>

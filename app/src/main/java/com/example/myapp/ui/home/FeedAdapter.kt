@@ -5,7 +5,13 @@ import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
 import com.example.myapp.R
 
-class FeedAdapter(private val feeds: List<FeedModel>) : RecyclerView.Adapter<FeedViewHolder>() {
+class FeedAdapter(private var feeds: List<FeedModel>) : RecyclerView.Adapter<FeedViewHolder>() {
+
+    // 更新数据
+    fun updateData(newFeeds: List<FeedModel>) {
+        feeds = newFeeds
+        notifyDataSetChanged() // 数据更新后刷新 RecyclerView
+    }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): FeedViewHolder {
         val itemView = LayoutInflater.from(parent.context).inflate(R.layout.item_post, parent, false)
