@@ -1,10 +1,9 @@
-package com.example.myapp.ui.post.PagerView
+package com.example.myapp.ui.post.pagerView
 
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
 import com.example.myapp.R
-import com.example.myapp.ui.post.PagerView.PagerViewHolder
 
 class PagerViewAdapter : RecyclerView.Adapter<PagerViewHolder>() {
     private var mList: List<Int> = ArrayList()

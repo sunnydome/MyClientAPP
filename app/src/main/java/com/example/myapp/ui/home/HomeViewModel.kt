@@ -3,7 +3,7 @@ package com.example.myapp.ui.home
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
-import com.example.myapp.ui.home.RecyclerPostView.FeedRepository
+import com.example.myapp.ui.home.recyclerPostView.FeedRepository
 
 class HomeViewModel : ViewModel() {
     private val feedRepository = FeedRepository()

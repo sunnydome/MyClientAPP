@@ -1,4 +1,4 @@
-package com.example.myapp.ui.post.PagerView
+package com.example.myapp.ui.post.pagerView
 
 import android.graphics.Color
 import android.view.View

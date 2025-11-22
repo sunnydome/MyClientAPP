@@ -1,4 +1,4 @@
-package com.example.myapp.ui.home.RecyclerPostView
+package com.example.myapp.ui.home.recyclerPostView
 
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData

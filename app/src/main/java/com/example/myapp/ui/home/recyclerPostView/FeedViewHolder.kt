@@ -1,4 +1,4 @@
-package com.example.myapp.ui.home.RecyclerPostView
+package com.example.myapp.ui.home.recyclerPostView
 
 import android.view.View
 import android.widget.ImageView
