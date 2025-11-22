@@ -1,0 +1,183 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/main"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".ui.post.PostActivity">
+
+    <ImageView
+        android:id="@+id/home_return"
+        android:layout_width="30dp"
+        android:layout_height="30dp"
+        android:layout_marginStart="10dp"
+        android:layout_marginTop="4dp"
+        android:outlineSpotShadowColor="@color/default_color"
+        android:src="@drawable/outline_arrow_back_24"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="@+id/post_user_avatar"
+        app:layout_constraintEnd_toStartOf="@+id/post_user_avatar"/>
+
+    <ImageView
+        android:id="@+id/post_user_avatar"
+        android:layout_width="38dp"
+        android:layout_height="38dp"
+        android:layout_marginStart="1dp"
+        android:layout_marginTop="10dp"
+        android:src="@drawable/ic_launcher_foreground"
+        app:layout_constraintStart_toEndOf="@+id/home_return"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintEnd_toStartOf="@+id/post_user_name"
+        android:scaleType="centerCrop"
+        android:background="@drawable/user_avatar_bg" />
+
+    <TextView
+        android:id="@+id/post_user_name"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="5dp"
+        android:layout_marginTop="4dp"
+        app:layout_constraintTop_toTopOf="@+id/post_user_avatar"
+        app:layout_constraintStart_toEndOf="@+id/post_user_avatar"
+        app:layout_constraintEnd_toStartOf="@+id/followButton"
+        android:textStyle="bold"
+        android:gravity="center"
+        android:textColor="#000000"
+        android:text="@string/feed_default_name"
+        android:textSize="20sp" />
+    <!-- 关注按钮 -->
+    <Button
+        android:id="@+id/followButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="关注"
+        android:textStyle="bold"
+        android:textColor="@color/colorAccent"
+        android:textSize="20sp"
+        android:paddingStart="20dp"
+        android:paddingEnd="20dp"
+        android:background="@drawable/button_focus"
+        android:layout_marginStart="110dp"
+        android:layout_marginEnd="10dp"
+        android:layout_marginTop="5dp"
+        app:layout_constraintStart_toEndOf="@+id/post_user_name"
+        app:layout_constraintEnd_toStartOf="@id/share_icon"
+        app:layout_constraintTop_toTopOf="parent" />
+    <ImageView
+        android:id="@+id/share_icon"
+        android:layout_width="30dp"
+        android:layout_height="30dp"
+        android:layout_marginStart="2dp"
+        android:layout_marginTop="4dp"
+        android:layout_marginEnd="15dp"
+        android:src="@drawable/share_icon"
+        app:layout_constraintStart_toEndOf="@+id/followButton"
+        app:layout_constraintTop_toTopOf="@id/post_user_avatar"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:scaleType="centerCrop" />
+    <androidx.constraintlayout.widget.Barrier
+        android:id="@+id/home_top_barrier"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        app:barrierDirection="bottom"
+        app:constraint_referenced_ids="home_return, post_user_avatar, post_user_name, followButton, share_icon" />
+
+    <androidx.core.widget.NestedScrollView
+        android:id="@+id/nested_scroll_view"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        app:layout_constraintTop_toBottomOf="@id/home_top_barrier"
+        app:layout_constraintBottom_toBottomOf="parent">
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+            <!-- ViewPager2 for images -->
+            <androidx.viewpager2.widget.ViewPager2
+                android:id="@+id/view_pager"
+                android:layout_width="match_parent"
+                android:layout_height="500dp" />
+
+            <TextView
+                android:id="@+id/post_description"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="帖子描述/标题"
+                android:textSize="25sp"
+                android:textStyle="bold"
+                android:textColor="@color/black"
+                android:layout_marginTop="10dp"
+                android:layout_marginStart="10dp"
+                />
+            <TextView
+                android:id="@+id/post_detail"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="这里是帖子正文，你可以想写多少写多少"
+                android:textSize="20sp"
+                android:textColor="@color/black"
+                android:layout_marginTop="10dp"
+                android:layout_marginStart="10dp"
+                />
+            <TextView
+                android:id="@+id/post_time_position"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="编辑于某时某地"
+                android:textSize="15sp"
+                android:layout_marginTop="5dp"
+                android:layout_marginStart="10dp"
+                />
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:layout_marginTop="15dp"
+                android:background="@android:color/darker_gray" />
+
+
+            <TextView
+                android:id="@+id/post_comment_counts"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="共x条评论"
+                android:textSize="17sp"
+                android:letterSpacing="0.15"
+                android:textColor="@color/black"
+                android:textStyle="bold"
+                android:layout_marginTop="10dp"
+                android:layout_marginStart="10dp"
+                />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginTop="15dp"
+                android:layout_marginStart="10dp">
+                <ImageView
+                    android:id="@+id/post_mine_avatar"
+                    android:layout_width="38dp"
+                    android:layout_height="38dp"
+                    android:src="@drawable/ic_launcher_foreground"
+                    android:background="@drawable/user_avatar_bg" />
+
+                <EditText
+                    android:id="@+id/comment_input"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="10dp"
+                    android:layout_marginEnd="10dp"
+                    android:layout_weight="1"
+                    android:background="@drawable/comment_input_background"
+                    android:hint="写评论..."
+                    android:paddingStart="15dp"
+                    android:paddingEnd="15dp"
+                    android:textColor="@color/black"
+                    android:textSize="16sp" />
+            </LinearLayout>
+
+        </LinearLayout>
+
+    </androidx.core.widget.NestedScrollView>
+</androidx.constraintlayout.widget.ConstraintLayout>

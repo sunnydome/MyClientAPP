@@ -1,14 +1,17 @@
-package com.example.myapp.ui.home
+package com.example.myapp.ui.post.RecyclerCommentView
 
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
 import com.example.myapp.R
+import com.example.myapp.ui.home.FeedModel
+import com.example.myapp.ui.home.RecyclerPostView.FeedViewHolder
+import com.example.myapp.ui.post.CommentModel
 
-class FeedAdapter(private var feeds: List<FeedModel>) : RecyclerView.Adapter<FeedViewHolder>() {
+class CommentAdapter(private var feeds: List<CommentModel>) : RecyclerView.Adapter<FeedViewHolder>() {
 
     // 更新数据
-    fun updateData(newFeeds: List<FeedModel>) {
+    fun updateData(newFeeds: List<CommentModel>) {
         feeds = newFeeds
         notifyDataSetChanged() // 数据更新后刷新 RecyclerView
     }

@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<shape xmlns:android="http://schemas.android.com/apk/res/android">
+    <solid android:color="@color/white"/> <!-- 中间部分是透明 -->
+    <corners android:radius="20dp"/> <!-- 胶囊的圆角 -->
+    <stroke
+        android:color="#6B6A6A"
+    android:width="2dp"/>
+    <shadow
+        android:radius="4dp"
+        color="@color/gray"/>
+</shape>

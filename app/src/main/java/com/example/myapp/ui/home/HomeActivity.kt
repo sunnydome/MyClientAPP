@@ -11,6 +11,7 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.recyclerview.widget.RecyclerView
 import androidx.recyclerview.widget.StaggeredGridLayoutManager
 import com.example.myapp.R
+import com.example.myapp.ui.home.RecyclerPostView.FeedAdapter
 
 class HomeActivity : ComponentActivity() {
     private lateinit var recyclerView: RecyclerView
