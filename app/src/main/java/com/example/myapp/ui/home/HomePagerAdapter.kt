@@ -1,0 +1,38 @@
+package com.example.myapp.ui.home
+
+import androidx.fragment.app.Fragment
+import androidx.fragment.app.FragmentActivity
+import androidx.viewpager2.adapter.FragmentStateAdapter
+
+/**
+ * ViewPager2 的 Adapter
+ * 用于管理不同Tab对应的Fragment
+ */
+class HomePagerAdapter(
+    fragmentActivity: FragmentActivity,
+    private val categories: List<String>
+) : FragmentStateAdapter(fragmentActivity) {
+
+    /**
+     * 返回Fragment的数量
+     */
+    override fun getItemCount(): Int = categories.size
+
+    /**
+     * 根据位置创建对应的Fragment
+     * @param position 位置索引
+     * @return 对应类别的FeedFragment
+     */
+    override fun createFragment(position: Int): Fragment {
+        return FeedFragment.newInstance(categories[position])
+    }
+
+    /**
+     * 获取指定位置的类别名称
+     * @param position 位置索引
+     * @return 类别名称
+     */
+    fun getCategoryAtPosition(position: Int): String {
+        return categories[position]
+    }
+}

@@ -1,5 +1,23 @@
 <?xml version="1.0" encoding="utf-8"?>
-<resources>
+<resources xmlns:tools="http://schemas.android.com/tools">
 
-    <style name="Theme.MyApp" parent="android:Theme.Material.Light.NoActionBar" />
+    <!-- 基础主题 - 继承自 AppCompat -->
+    <style name="Theme.MyApp" parent="Theme.AppCompat.Light.DarkActionBar">
+        <!-- 主色调 -->
+        <item name="colorPrimary">@color/selected_color</item>
+        <item name="colorPrimaryDark">@color/selected_color</item>
+        <item name="colorAccent">@color/selected_color</item>
+
+        <!-- 状态栏颜色 -->
+        <item name="android:statusBarColor">@color/white</item>
+        <!-- 状态栏图标颜色 (Android 6.0+) -->
+        <item name="android:windowLightStatusBar" tools:targetApi="m">true</item>
+    </style>
+
+    <!-- 无ActionBar的主题 - 用于HomeActivity -->
+    <style name="Theme.MyApp.NoActionBar">
+        <item name="windowActionBar">false</item>
+        <item name="windowNoTitle">true</item>
+    </style>
+
 </resources>

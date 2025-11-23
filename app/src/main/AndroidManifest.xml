@@ -13,12 +13,14 @@
         android:theme="@style/Theme.MyApp">
         <activity
             android:name=".ui.post.PostActivity"
-            android:exported="true" >
+            android:exported="true"
+            android:theme="@style/Theme.MyApp.NoActionBar">
 
         </activity>
         <activity
             android:name=".ui.home.HomeActivity"
-            android:exported="true">
+            android:exported="true"
+            android:theme="@style/Theme.MyApp.NoActionBar">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />

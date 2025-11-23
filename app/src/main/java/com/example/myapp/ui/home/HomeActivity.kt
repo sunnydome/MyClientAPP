@@ -1,94 +1,101 @@
 package com.example.myapp.ui.home
 
-import android.graphics.Paint
 import android.os.Bundle
-import android.view.View
-import android.widget.TextView
-import androidx.activity.ComponentActivity
-import androidx.constraintlayout.widget.ConstraintLayout
-import androidx.core.content.ContextCompat
-import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModelProvider
-import androidx.recyclerview.widget.RecyclerView
-import androidx.recyclerview.widget.StaggeredGridLayoutManager
+import androidx.viewpager2.widget.ViewPager2
 import com.example.myapp.R
-import com.example.myapp.ui.home.recyclerPostView.FeedAdapter
+import com.google.android.material.tabs.TabLayout
+import com.google.android.material.tabs.TabLayoutMediator
+import androidx.appcompat.app.AppCompatActivity
+/**
+ * 首页Activity - 使用ViewPager2 + TabLayout实现Tab切换
+ */
+class HomeActivity : AppCompatActivity() {
 
-class HomeActivity : ComponentActivity() {
-    private lateinit var feedRecyclerView: RecyclerView
-    private lateinit var feedAdapter: FeedAdapter
+    private lateinit var viewPager: ViewPager2
+    private lateinit var tabLayout: TabLayout
+    private lateinit var pagerAdapter: HomePagerAdapter
     private lateinit var homeViewModel: HomeViewModel
 
-    private lateinit var homeConcerned: TextView
-
-    private lateinit var homeRecommend: TextView
-
-    private lateinit var homeCity: TextView
-
-    private lateinit var underline : View
+    // Tab类别列表
+    private val categories = listOf("关注", "发现", "同城")
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_home)
 
-        // 初始化 RecyclerView
-        feedRecyclerView = findViewById(R.id.recyclerview_feed)
-        feedRecyclerView.layoutManager =
-            StaggeredGridLayoutManager(2, StaggeredGridLayoutManager.VERTICAL)
-
-        // 初始化 ViewModel
+        // 初始化ViewModel
         homeViewModel = ViewModelProvider(this)[HomeViewModel::class.java]
 
-        // 初始化TextView
-        homeConcerned = findViewById(R.id.home_concerned)
-        homeRecommend = findViewById(R.id.home_recommend)
-        homeCity = findViewById(R.id.home_city)
+        // 初始化ViewPager2
+        initViewPager()
 
-        underline = findViewById<View>(R.id.underline_top)
-        // 设置点击事件
-        homeConcerned.setOnClickListener { onTabSelected("关注") }
-        homeRecommend.setOnClickListener { onTabSelected("发现") }
-        homeCity.setOnClickListener { onTabSelected("同城") }
+        // 初始化TabLayout
+        initTabLayout()
 
-        // 观察 LiveData 数据
-        homeViewModel.getFeeds().observe(this, Observer { feedList ->
-            feedAdapter = FeedAdapter(feedList)
-            feedRecyclerView.adapter = feedAdapter
+        // 设置默认选中"发现"Tab
+        setDefaultTab()
+    }
+
+    /**
+     * 初始化ViewPager2
+     */
+    private fun initViewPager() {
+        viewPager = findViewById(R.id.view_pager)
+        pagerAdapter = HomePagerAdapter(this, categories)
+        viewPager.adapter = pagerAdapter
+
+        // 设置ViewPager预加载页面数量（可选）
+        viewPager.offscreenPageLimit = 1
+
+        // 监听页面切换
+        viewPager.registerOnPageChangeCallback(object : ViewPager2.OnPageChangeCallback() {
+            override fun onPageSelected(position: Int) {
+                super.onPageSelected(position)
+                // 页面切换时可以做一些操作，比如统计、预加载等
+                val category = categories[position]
+                onTabSelected(category, position)
+            }
         })
-        onTabSelected("发现")
     }
 
-    private fun onTabSelected(category : String) {
-        resetTabs()
-        underline.visibility = View.VISIBLE
-        val layoutParams = underline.layoutParams as ConstraintLayout.LayoutParams
-        when (category) {
-            "关注" -> {
-                homeConcerned.setTextColor(ContextCompat.getColor(this,R.color.selected_color))
-                layoutParams.startToStart = homeConcerned.id
-            }
-            "发现" -> {
-                homeRecommend.setTextColor(ContextCompat.getColor(this,R.color.selected_color))
-                layoutParams.startToStart = homeRecommend.id
-            }
-            "同城" -> {
-                homeCity.setTextColor(ContextCompat.getColor(this,R.color.selected_color))
-                layoutParams.startToStart = homeCity.id
-            }
+    /**
+     * 初始化TabLayout并与ViewPager2关联
+     */
+    private fun initTabLayout() {
+        tabLayout = findViewById(R.id.tab_layout)
+
+        // 使用TabLayoutMediator将TabLayout与ViewPager2关联
+        TabLayoutMediator(tabLayout, viewPager) { tab, position ->
+            // 设置Tab的文字
+            tab.text = categories[position]
+        }.attach()
+    }
+
+    /**
+     * 设置默认选中的Tab
+     */
+    private fun setDefaultTab() {
+        // 默认选中"发现"（索引1）
+        val defaultPosition = categories.indexOf("发现")
+        if (defaultPosition != -1) {
+            viewPager.setCurrentItem(defaultPosition, false) // false表示不平滑滚动
         }
-        underline.layoutParams = layoutParams
-        // 根据选中的 tab 加载不同的数据
-        homeViewModel.loadDataForTab(category)
     }
 
-    private fun resetTabs() {
+    /**
+     * Tab选中时的回调
+     * @param category 类别名称
+     * @param position Tab位置
+     */
+    private fun onTabSelected(category: String, position: Int) {
+        // 可以在这里添加统计、日志等
+        // 例如：Analytics.trackTabSelected(category)
+    }
 
-        underline.visibility = View.GONE
-        // 重置Tab样式
-        homeConcerned.setTextColor(ContextCompat.getColor(this, R.color.default_color))
-
-        homeRecommend.setTextColor(ContextCompat.getColor(this, R.color.default_color))
-
-        homeCity.setTextColor(ContextCompat.getColor(this, R.color.default_color))
+    override fun onDestroy() {
+        super.onDestroy()
+        // 清理资源
+        viewPager.adapter = null
     }
 }

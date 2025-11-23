@@ -3,7 +3,7 @@ package com.example.myapp.ui.post
 import android.os.Bundle
 import android.util.Log
 import com.example.myapp.R
-import androidx.activity.ComponentActivity
+import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModelProvider
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -12,7 +12,7 @@ import androidx.viewpager2.widget.ViewPager2
 import com.example.myapp.ui.post.pagerView.PagerViewAdapter
 import com.example.myapp.ui.post.recyclerCommentView.CommentAdapter
 
-class PostActivity : ComponentActivity() {
+class PostActivity : AppCompatActivity() {
 
     private lateinit var commentRecyclerView: RecyclerView
     private lateinit var commentAdapter: CommentAdapter

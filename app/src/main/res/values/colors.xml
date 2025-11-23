@@ -6,10 +6,22 @@
     <color name="teal_200">#FF03DAC5</color>
     <color name="teal_700">#FF018786</color>
     <color name="black">#FF000000</color>
-    <color name="white">#FFFFFFFF</color>
     <color name="gray">#CECECE</color>
-    <color name="selected_color">#000000</color>
-    <color name="default_color">#868686</color>
     <color name="colorAccent">#FF4081</color> <!-- 胶囊按钮边框颜色 -->
     <color name="colorPrimary">#6200EE</color> <!-- 按钮按下时的边框颜色 -->
+
+    <!-- 主题色 -->
+    <color name="selected_color">#FF2442</color>
+    <color name="default_color">#666666</color>
+
+    <!-- 背景色 -->
+    <color name="white">#FFFFFF</color>
+    <color name="background_gray">#F5F5F5</color>
+
+    <!-- 文字颜色 -->
+    <color name="text_primary">#333333</color>
+    <color name="text_secondary">#999999</color>
+
+    <!-- 分割线 -->
+    <color name="divider">#E5E5E5</color>
 </resources>

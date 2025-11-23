@@ -8,21 +8,21 @@
     <!-- Line 1 -->
     <path
         android:strokeColor="@android:color/white"
-        android:strokeWidth="2.5"
+        android:strokeWidth="2"
         android:strokeLineCap="round"
         android:pathData="M3,7 L21,7" />
 
     <!-- Line 2 -->
     <path
         android:strokeColor="@android:color/white"
-        android:strokeWidth="2.5"
+        android:strokeWidth="2"
         android:strokeLineCap="round"
         android:pathData="M3,12 L21,12" />
 
     <!-- Line 3 -->
     <path
         android:strokeColor="@android:color/white"
-        android:strokeWidth="2.5"
+        android:strokeWidth="2"
         android:strokeLineCap="round"
         android:pathData="M3,17 L21,17" />
 
