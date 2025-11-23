@@ -15,4 +15,10 @@
         <item name="tabTextColor">@color/default_color</item>
         <item name="tabIndicatorFullWidth">false</item>
     </style>
+    <style name="BottomNavTextStyle">
+        <item name="android:textSize">14sp</item> <!-- 字体大小 -->
+        <item name="android:height">200dp</item> <!-- 行高 -->
+        <item name="android:textAlignment">center</item> <!-- 文字水平居中 -->
+
+    </style>
 </resources>

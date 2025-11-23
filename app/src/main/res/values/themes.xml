@@ -1,23 +1,35 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources xmlns:tools="http://schemas.android.com/tools">
 
-    <!-- 基础主题 - 继承自 AppCompat -->
-    <style name="Theme.MyApp" parent="Theme.AppCompat.Light.DarkActionBar">
-        <!-- 主色调 -->
+    <!--
+       修改方案：
+       1. 只保留一个 Theme.MyApp。
+       2. parent 必须改为 Theme.MaterialComponents... 以支持 BottomAppBar。
+       3. 选择了 NoActionBar 版本，因为你自己写了顶部/底部导航，不需要系统自带的标题栏。
+    -->
+    <style name="Theme.MyApp" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+
+        <!-- ================= 颜色设置 ================= -->
+        <!-- 主色调：用于 AppBar, 按钮背景等 -->
         <item name="colorPrimary">@color/selected_color</item>
-        <item name="colorPrimaryDark">@color/selected_color</item>
-        <item name="colorAccent">@color/selected_color</item>
+        <item name="colorPrimaryVariant">@color/selected_color</item>
+        <item name="colorOnPrimary">@color/white</item>
 
-        <!-- 状态栏颜色 -->
+        <!-- 次色调：FloatingActionButton (FAB) 默认会用这个颜色 -->
+        <!-- 如果你想让 FAB 默认是其他颜色，修改这里，或者在布局XML里用 app:backgroundTint 修改 -->
+        <item name="colorSecondary">@color/selected_color</item>
+        <item name="colorSecondaryVariant">@color/selected_color</item>
+        <item name="colorOnSecondary">@color/white</item>
+
+        <!-- ================= 状态栏设置 ================= -->
+        <!-- 状态栏背景色 -->
         <item name="android:statusBarColor">@color/white</item>
-        <!-- 状态栏图标颜色 (Android 6.0+) -->
+        <!-- 状态栏文字变黑 (Android 6.0+) -->
         <item name="android:windowLightStatusBar" tools:targetApi="m">true</item>
-    </style>
 
-    <!-- 无ActionBar的主题 - 用于HomeActivity -->
-    <style name="Theme.MyApp.NoActionBar">
-        <item name="windowActionBar">false</item>
-        <item name="windowNoTitle">true</item>
+        <!-- ================= 其他 Material 组件设置 ================= -->
+        <!-- 这一行解决某些组件 crash 问题，非必须但推荐 -->
+        <!-- <item name="bottomAppBarStyle">@style/Widget.MaterialComponents.BottomAppBar.Colored</item> -->
     </style>
 
 </resources>

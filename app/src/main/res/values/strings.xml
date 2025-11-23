@@ -11,8 +11,19 @@
     <!-- 图标描述 -->
     <string name="menu">菜单</string>
     <string name="search">搜索</string>
+    <!-- 底部导航 -->
+    <string name="nav_home">首页</string>
+    <string name="nav_market">集市</string>
+    <string name="nav_publish">发布</string>
+    <string name="nav_message">消息</string>
+    <string name="nav_profile">我的</string>
 
+    <!-- 其他 -->
+    <string name="close">关闭</string>
+    <string name="return_page">返回上页</string>
     <!-- 空状态 -->
     <string name="empty_hint">空状态</string>
     <string name="no_content">暂无内容</string>
+    <!-- TODO: Remove or change this placeholder text -->
+    <string name="hello_blank_fragment">Hello blank fragment</string>
 </resources>

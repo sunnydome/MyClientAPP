@@ -1,17 +1,19 @@
 package com.example.myapp.ui.home
 
 import androidx.fragment.app.Fragment
-import androidx.fragment.app.FragmentActivity
 import androidx.viewpager2.adapter.FragmentStateAdapter
 
 /**
  * ViewPager2 的 Adapter
  * 用于管理不同Tab对应的Fragment
+ *
+ * 注意：现在接收 Fragment 作为参数（而不是 FragmentActivity）
+ * 因为 HomeFragment 内部需要嵌套 ViewPager2
  */
 class HomePagerAdapter(
-    fragmentActivity: FragmentActivity,
+    fragment: Fragment,  // ← 改为接收 Fragment
     private val categories: List<String>
-) : FragmentStateAdapter(fragmentActivity) {
+) : FragmentStateAdapter(fragment) {  // ← 传入 Fragment
 
     /**
      * 返回Fragment的数量

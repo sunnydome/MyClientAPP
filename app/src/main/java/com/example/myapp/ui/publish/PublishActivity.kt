@@ -1,0 +1,240 @@
+package com.example.myapp.ui.publish
+
+import android.app.ActivityOptions
+import android.net.Uri
+import android.os.Build
+import android.os.Bundle
+import android.text.Editable
+import android.text.TextWatcher
+import android.view.View
+import android.widget.EditText
+import android.widget.TextView
+import android.widget.Toast
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.fragment.app.FragmentActivity
+import androidx.lifecycle.ViewModelProvider
+import androidx.recyclerview.widget.GridLayoutManager
+import androidx.recyclerview.widget.RecyclerView
+import com.example.myapp.R
+import com.example.myapp.ui.publish.adapter.ImagePickerAdapter
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
+
+/**
+ * 发布Activity - 独立的发布页面
+ * 使用MVVM架构管理发布内容
+ */
+class PublishActivity : FragmentActivity() {
+
+    private lateinit var viewModel: PublishViewModel
+    private lateinit var imageAdapter: ImagePickerAdapter
+
+    // Views
+    private lateinit var rvImages: RecyclerView
+    private lateinit var etTitle: EditText
+    private lateinit var etContent: EditText
+    private lateinit var btnPublish: TextView
+    private lateinit var btnSaveDraft: TextView
+    private lateinit var btnClose: View
+
+    // 图片选择器
+    private val imagePickerLauncher = registerForActivityResult(
+        ActivityResultContracts.GetMultipleContents()
+    ) { uris: List<Uri> ->
+        if (uris.isNotEmpty()) {
+            val remainingSlots = viewModel.getRemainingImageSlots()
+            val urisToAdd = uris.take(remainingSlots)
+            viewModel.addImages(urisToAdd)
+
+            // 如果选择的图片超过剩余槽位，提示用户
+            if (uris.size > remainingSlots) {
+                Toast.makeText(
+                    this,
+                    "最多只能选择${PublishViewModel.MAX_IMAGE_COUNT}张图片",
+                    Toast.LENGTH_SHORT
+                ).show()
+            }
+        }
+    }
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        // 设置退出动画（推荐方式）
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+            overrideActivityTransition(
+                OVERRIDE_TRANSITION_CLOSE,
+                R.anim.no_animation,
+                R.anim.slide_down_out
+            )
+        }
+        setContentView(R.layout.activity_publish)
+
+        // 初始化ViewModel
+        viewModel = ViewModelProvider(this)[PublishViewModel::class.java]
+
+        // 初始化Views
+        initViews()
+
+        // 设置适配器
+        setupImageAdapter()
+
+        // 设置监听器
+        setupListeners()
+
+        // 观察ViewModel数据
+        observeViewModel()
+    }
+
+    /**
+     * 初始化Views
+     */
+    private fun initViews() {
+        rvImages = findViewById(R.id.rv_images)
+        etTitle = findViewById(R.id.et_title)
+        etContent = findViewById(R.id.et_content)
+        btnPublish = findViewById(R.id.btn_publish)
+        btnSaveDraft = findViewById(R.id.btn_save_draft)
+        btnClose = findViewById(R.id.btn_close)
+    }
+
+    /**
+     * 设置图片适配器
+     */
+    private fun setupImageAdapter() {
+        imageAdapter = ImagePickerAdapter(
+            onAddClick = {
+                // 点击添加按钮，打开图片选择器
+                if (viewModel.canAddMoreImages()) {
+                    imagePickerLauncher.launch("image/*")
+                } else {
+                    Toast.makeText(
+                        this,
+                        "最多只能选择${PublishViewModel.MAX_IMAGE_COUNT}张图片",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                }
+            },
+            onImageClick = { position, uri ->
+                // 点击图片预览（后续可实现大图预览）
+                Toast.makeText(this, "点击了图片 ${position + 1}", Toast.LENGTH_SHORT).show()
+            },
+            onRemoveClick = { position ->
+                // 移除图片
+                viewModel.removeImage(position)
+            }
+        )
+
+        // 设置网格布局，3列
+        rvImages.layoutManager = GridLayoutManager(this, 3)
+        rvImages.adapter = imageAdapter
+    }
+
+    /**
+     * 设置监听器
+     */
+    private fun setupListeners() {
+        // 返回按钮
+        btnClose.setOnClickListener {
+            handleBackPressed()
+        }
+
+        // 标题输入监听
+        etTitle.addTextChangedListener(object : TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
+            override fun afterTextChanged(s: Editable?) {
+                viewModel.updateTitle(s?.toString() ?: "")
+            }
+        })
+
+        // 正文输入监听
+        etContent.addTextChangedListener(object : TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
+            override fun afterTextChanged(s: Editable?) {
+                viewModel.updateContent(s?.toString() ?: "")
+            }
+        })
+
+        // 发布按钮
+        btnPublish.setOnClickListener {
+            viewModel.requestPublish()
+        }
+
+        // 存草稿按钮
+        btnSaveDraft.setOnClickListener {
+            viewModel.saveDraft()
+        }
+    }
+
+    /**
+     * 观察ViewModel数据
+     */
+    private fun observeViewModel() {
+        // 观察图片列表变化
+        viewModel.selectedImages.observe(this) { images ->
+            imageAdapter.updateImages(images)
+        }
+
+        // 观察是否可以发布
+        viewModel.canPublish.observe(this) { canPublish ->
+            btnPublish.isEnabled = canPublish
+            btnPublish.alpha = if (canPublish) 1.0f else 0.5f
+        }
+
+        // 观察发布事件
+        viewModel.publishEvent.observe(this) { post ->
+            post?.let {
+                // TODO: 实现实际的发布逻辑
+                // 这里只是示例，实际应该调用网络请求上传数据
+                Toast.makeText(this, "发布功能待实现", Toast.LENGTH_SHORT).show()
+
+                // 发布成功后关闭页面
+                // finish()
+
+                viewModel.publishEventHandled()
+            }
+        }
+
+        // 观察保存草稿事件
+        viewModel.saveDraftEvent.observe(this) { draft ->
+            draft?.let {
+                // TODO: 实现草稿保存逻辑
+                // 可以保存到本地数据库或SharedPreferences
+                Toast.makeText(this, "草稿已保存", Toast.LENGTH_SHORT).show()
+                finish()
+
+                viewModel.draftEventHandled()
+            }
+        }
+    }
+
+    /**
+     * 处理返回事件
+     */
+    private fun handleBackPressed() {
+        // 如果有未保存的内容，提示用户
+        if (viewModel.hasUnsavedContent()) {
+            MaterialAlertDialogBuilder(this)
+                .setTitle("提示")
+                .setMessage("是否保存为草稿？")
+                .setPositiveButton("保存") { _, _ ->
+                    viewModel.saveDraft()
+                }
+                .setNegativeButton("放弃") { _, _ ->
+                    finish()
+                }
+                .setNeutralButton("取消", null)
+                .show()
+        } else {
+            finish()
+        }
+    }
+
+    /**
+     * 重写返回键
+     */
+    @Deprecated("Deprecated in Java")
+    override fun onBackPressed() {
+        handleBackPressed()
+    }
+}

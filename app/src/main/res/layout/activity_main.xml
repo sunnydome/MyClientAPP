@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 根布局必须是 CoordinatorLayout -->
+<androidx.coordinatorlayout.widget.CoordinatorLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#F5F5F5">
+
+    <!-- 这里放你的页面内容容器，比如 FragmentContainerView -->
+    <FrameLayout
+        android:id="@+id/fragment_container"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_marginBottom="0dp"/>
+    <!-- marginBottom 防止内容被底部栏遮挡 -->
+
+
+    <!-- 1. 底部栏容器：BottomAppBar -->
+    <!-- fabCradleMargin: 凹槽与按钮的间距 -->
+    <!-- fabCradleRoundedCornerRadius: 凹槽的圆角大小 -->
+    <!-- fabAlignmentMode: 按钮居中 (center) -->
+    <com.google.android.material.bottomappbar.BottomAppBar
+        android:id="@+id/bottom_app_bar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom"
+        android:backgroundTint="@color/white"
+        app:fabCradleRoundedCornerRadius="20dp"
+        app:fabCradleMargin="0dp"
+        app:fabAlignmentMode="center"
+        app:fabCradleVerticalOffset="0dp">
+
+        <!-- 2. 内部嵌套 BottomNavigationView -->
+        <!-- background 设为透明，否则会挡住 BottomAppBar 的凹槽形状 -->
+        <!-- elevation 设为 0，防止阴影冲突 -->
+        <com.google.android.material.bottomnavigation.BottomNavigationView
+            android:id="@+id/bottom_navigation"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="12dp"
+            android:layout_marginStart="12dp"
+            android:background="@android:color/transparent"
+            app:elevation="0dp"
+            app:labelVisibilityMode="labeled"
+            app:menu="@menu/bottom_navigation_menu"
+            app:itemIconTint="@color/bottom_nav_item_color"
+            app:itemTextColor="@color/bottom_nav_item_color"/>
+
+    </com.google.android.material.bottomappbar.BottomAppBar>
+
+    <!-- 3. 悬浮按钮 (FAB) -->
+    <!-- layout_anchor: 锚定到底部栏 -->
+    <!-- backgroundTint: 按钮背景色 (设为白色) -->
+    <!-- tint: 图标颜色 (设为null以显示你的图片原色) -->
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/fab_publish"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:contentDescription="@string/nav_publish"
+        android:src="@drawable/ic_add_circle"
+        app:backgroundTint="@color/white"
+        app:layout_anchor="@+id/bottom_app_bar"
+        app:layout_anchorGravity="center"
+        app:tint="@null"
+        app:elevation="2dp"
+        app:pressedTranslationZ="0dp" />
+
+</androidx.coordinatorlayout.widget.CoordinatorLayout>
