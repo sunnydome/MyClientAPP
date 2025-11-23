@@ -13,7 +13,6 @@
         android:layout_height="30dp"
         android:layout_marginStart="10dp"
         android:layout_marginTop="4dp"
-        android:outlineSpotShadowColor="@color/default_color"
         android:src="@drawable/outline_arrow_back_24"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="@+id/post_user_avatar"

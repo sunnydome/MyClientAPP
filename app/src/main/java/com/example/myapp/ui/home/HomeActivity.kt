@@ -2,8 +2,10 @@ package com.example.myapp.ui.home
 
 import android.graphics.Paint
 import android.os.Bundle
+import android.view.View
 import android.widget.TextView
 import androidx.activity.ComponentActivity
+import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModelProvider
@@ -23,6 +25,8 @@ class HomeActivity : ComponentActivity() {
 
     private lateinit var homeCity: TextView
 
+    private lateinit var underline : View
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_home)
@@ -40,6 +44,7 @@ class HomeActivity : ComponentActivity() {
         homeRecommend = findViewById(R.id.home_recommend)
         homeCity = findViewById(R.id.home_city)
 
+        underline = findViewById<View>(R.id.underline_top)
         // 设置点击事件
         homeConcerned.setOnClickListener { onTabSelected("关注") }
         homeRecommend.setOnClickListener { onTabSelected("发现") }
@@ -55,34 +60,35 @@ class HomeActivity : ComponentActivity() {
 
     private fun onTabSelected(category : String) {
         resetTabs()
-
+        underline.visibility = View.VISIBLE
+        val layoutParams = underline.layoutParams as ConstraintLayout.LayoutParams
         when (category) {
             "关注" -> {
                 homeConcerned.setTextColor(ContextCompat.getColor(this,R.color.selected_color))
-                homeConcerned.paintFlags = homeConcerned.paintFlags or Paint.UNDERLINE_TEXT_FLAG
+                layoutParams.startToStart = homeConcerned.id
             }
             "发现" -> {
                 homeRecommend.setTextColor(ContextCompat.getColor(this,R.color.selected_color))
-                homeRecommend.paintFlags = homeRecommend.paintFlags or Paint.UNDERLINE_TEXT_FLAG
+                layoutParams.startToStart = homeRecommend.id
             }
             "同城" -> {
                 homeCity.setTextColor(ContextCompat.getColor(this,R.color.selected_color))
-                homeCity.paintFlags = homeCity.paintFlags or Paint.UNDERLINE_TEXT_FLAG
+                layoutParams.startToStart = homeCity.id
             }
         }
+        underline.layoutParams = layoutParams
         // 根据选中的 tab 加载不同的数据
         homeViewModel.loadDataForTab(category)
     }
 
     private fun resetTabs() {
+
+        underline.visibility = View.GONE
         // 重置Tab样式
         homeConcerned.setTextColor(ContextCompat.getColor(this, R.color.default_color))
-        homeConcerned.paintFlags = homeConcerned.paintFlags and Paint.UNDERLINE_TEXT_FLAG.inv()
 
         homeRecommend.setTextColor(ContextCompat.getColor(this, R.color.default_color))
-        homeRecommend.paintFlags = homeRecommend.paintFlags and Paint.UNDERLINE_TEXT_FLAG.inv()
 
         homeCity.setTextColor(ContextCompat.getColor(this, R.color.default_color))
-        homeCity.paintFlags = homeCity.paintFlags and Paint.UNDERLINE_TEXT_FLAG.inv()
     }
 }

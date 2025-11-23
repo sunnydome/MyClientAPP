@@ -68,13 +68,22 @@
         android:src="@drawable/baseline_search_24"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintTop_toTopOf="@id/home_menu" />
-
+    <View
+        android:id="@+id/underline_top"
+        android:layout_width="30dp"
+        android:layout_height="5dp"
+        android:layout_marginTop="0dp"
+        android:layout_marginStart="22dp"
+        android:background="@drawable/rounded_underline"
+        app:layout_constraintTop_toBottomOf="@id/home_recommend"
+        app:layout_constraintStart_toStartOf="@id/home_recommend"
+        android:visibility="visible" />
     <androidx.constraintlayout.widget.Barrier
         android:id="@+id/home_top_barrier"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         app:barrierDirection="bottom"
-        app:constraint_referenced_ids="home_menu,home_concerned,home_recommend,home_city,home_search" />
+        app:constraint_referenced_ids="underline_top,home_concerned,home_recommend,home_city,home_search, home_menu" />
 
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/recyclerview_feed"
@@ -84,5 +93,6 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintBottom_toBottomOf="parent"/>
+
 
 </androidx.constraintlayout.widget.ConstraintLayout>
