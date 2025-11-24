@@ -8,6 +8,7 @@ import android.widget.ImageView
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
+import com.bumptech.glide.Glide
 import com.example.myapp.R
 
 /**
@@ -56,25 +57,36 @@ class ImagePickerAdapter(
         }
     }
 
-    /**
-     * 图片ViewHolder
-     */
     inner class ImageViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
         private val imageView: ImageView = itemView.findViewById(R.id.iv_image)
         private val removeButton: ImageView = itemView.findViewById(R.id.iv_remove)
 
-        fun bind(uri: Uri, position: Int) {
-            // 加载图片（这里使用系统的setImageURI，实际项目中建议使用Glide/Coil）
-            imageView.setImageURI(uri)
+        /**
+         * 图片ViewHolder
+         */
+        fun bind(uri: Uri, position: Int) { // 注意：这里的 position 参数仅用于初次绑定，不要在点击事件中使用
+            // 使用Glide加载图片
+            Glide.with(itemView.context)
+                .load(uri)
+                .into(imageView)
 
             // 点击图片预览
             imageView.setOnClickListener {
-                onImageClick(position, uri)
+                // 修改处 1：获取实时位置
+                val currentPos = bindingAdapterPosition
+                if (currentPos != RecyclerView.NO_POSITION) {
+                    onImageClick(currentPos, uri)
+                }
             }
 
             // 点击删除按钮
             removeButton.setOnClickListener {
-                onRemoveClick(position)
+                // 修改处 2：获取实时位置，代替原来的 position 参数
+                val currentPos = bindingAdapterPosition
+                // 确保位置有效（防止在动画移除过程中点击导致的越界崩溃）
+                if (currentPos != RecyclerView.NO_POSITION) {
+                    onRemoveClick(currentPos)
+                }
             }
         }
     }
