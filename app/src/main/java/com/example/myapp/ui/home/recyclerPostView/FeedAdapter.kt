@@ -1,29 +1,137 @@
 package com.example.myapp.ui.home.recyclerPostView
 
+import android.content.Intent
+import android.util.Log
 import android.view.LayoutInflater
+import android.view.View
 import android.view.ViewGroup
+import android.widget.ImageView
+import android.widget.TextView
+import androidx.recyclerview.widget.DiffUtil
+import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
+import com.bumptech.glide.Glide
+import com.bumptech.glide.load.engine.DiskCacheStrategy
 import com.example.myapp.R
-import com.example.myapp.ui.home.FeedModel
+import com.example.myapp.data.model.FeedItem
+import com.example.myapp.ui.post.PostActivity
 
-class FeedAdapter(private var feeds: List<FeedModel>) : RecyclerView.Adapter<FeedViewHolder>() {
+/**
+ * Feed列表适配器
+ * 使用ListAdapter + DiffUtil实现高效更新
+ *
+ * 更新说明：使用新的FeedItem数据模型
+ */
+class FeedAdapter(
+    private val onItemClick: ((FeedItem) -> Unit)? = null,
+    private val onLikeClick: ((FeedItem) -> Unit)? = null
+) : ListAdapter<FeedItem, FeedAdapter.FeedViewHolder>(FeedDiffCallback()) {
 
-    // 更新数据
-    fun updateData(newFeeds: List<FeedModel>) {
-        feeds = newFeeds
-        notifyDataSetChanged() // 数据更新后刷新 RecyclerView
+    /**
+     * 更新数据（兼容旧接口）
+     */
+    fun updateData(newFeeds: List<FeedItem>) {
+        submitList(newFeeds)
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): FeedViewHolder {
-        val itemView = LayoutInflater.from(parent.context).inflate(R.layout.item_post, parent, false)
+        val itemView = LayoutInflater.from(parent.context)
+            .inflate(R.layout.item_post, parent, false)
         return FeedViewHolder(itemView)
     }
 
     override fun onBindViewHolder(holder: FeedViewHolder, position: Int) {
-        holder.bind(feeds[position])
+        holder.bind(getItem(position))
     }
 
-    override fun getItemCount(): Int {
-        return feeds.size
+    inner class FeedViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
+
+        private val imageView: ImageView = itemView.findViewById(R.id.item_image)
+        private val titleText: TextView = itemView.findViewById(R.id.item_title)
+        private val userNameText: TextView = itemView.findViewById(R.id.item_user_name)
+        private val userAvatar: ImageView = itemView.findViewById(R.id.item_user_avatar)
+        // 可选的点赞按钮和计数（如果布局中有的话）
+        // TODO: 添加点赞按钮
+        //private val likeButton: ImageView? = itemView.findViewById(R.id.item_like_button)
+        //private val likeCount: TextView? = itemView.findViewById(R.id.item_like_count)
+
+        fun bind(feed: FeedItem) {
+            // 加载封面图
+            Glide.with(itemView.context)
+                .load(feed.coverUrl)
+                .placeholder(R.drawable.placeholder_image)
+                .error(R.drawable.error_image)
+                .dontAnimate()
+                .diskCacheStrategy(DiskCacheStrategy.ALL)
+                .into(imageView)
+
+            // 绑定标题/描述
+            titleText.text = feed.title
+
+            // 绑定用户名
+            userNameText.text = feed.authorName
+
+            // 加载用户头像
+            Glide.with(itemView.context)
+                .load(feed.authorAvatar)
+                .placeholder(R.drawable.avatar_placeholder)
+                .error(R.drawable.avatar_placeholder)
+                .circleCrop()
+                .dontAnimate()
+                .diskCacheStrategy(DiskCacheStrategy.ALL)
+                .into(userAvatar)
+
+            // 点赞按钮状态（如果有的话）
+            //likeButton?.let { button ->
+            //    button.isSelected = feed.isLiked
+            //    button.setOnClickListener {
+            //        onLikeClick?.invoke(feed)
+            //    }
+            //}
+
+            // 点赞数量（如果有的话）
+            //likeCount?.text = formatCount(feed.likeCount)
+
+            // 点击事件 - 跳转到详情页
+            itemView.setOnClickListener {
+                if (onItemClick != null) {
+                    Log.d("feed", "here")
+                    onItemClick.invoke(feed)
+
+                } else {
+                    Log.d("feed", "there")
+                    // 默认行为：跳转到帖子详情页
+                    val context = itemView.context
+                    val intent = Intent(context, PostActivity::class.java).apply {
+                        putExtra(PostActivity.EXTRA_POST_ID, feed.id)
+                    }
+                    context.startActivity(intent)
+                }
+            }
+        }
+
+        /**
+         * 格式化数量显示
+         */
+        private fun formatCount(count: Int): String {
+            return when {
+                count >= 10000 -> String.format("%.1fw", count / 10000.0)
+                count >= 1000 -> String.format("%.1fk", count / 1000.0)
+                else -> count.toString()
+            }
+        }
+    }
+}
+
+/**
+ * DiffUtil回调
+ */
+class FeedDiffCallback : DiffUtil.ItemCallback<FeedItem>() {
+    override fun areItemsTheSame(oldItem: FeedItem, newItem: FeedItem): Boolean {
+        return oldItem.id == newItem.id
+    }
+
+    override fun areContentsTheSame(oldItem: FeedItem, newItem: FeedItem): Boolean {
+        return oldItem == newItem
     }
 }

@@ -58,8 +58,9 @@ class HomeFragment : Fragment() {
         pagerAdapter = HomePagerAdapter(this, categories)
         viewPager.adapter = pagerAdapter
 
-        // 设置ViewPager预加载页面数量
-        viewPager.offscreenPageLimit = 1
+        // 修改点：设置为 Tab 总数 - 1，或者直接设为 2
+        // 这样“关注”、“发现”、“同城”三个页面都会一直保存在内存中，不会销毁 View
+        viewPager.offscreenPageLimit = categories.size
 
         // 监听页面切换
         viewPager.registerOnPageChangeCallback(object : ViewPager2.OnPageChangeCallback() {

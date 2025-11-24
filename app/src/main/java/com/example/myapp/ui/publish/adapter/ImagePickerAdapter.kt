@@ -72,7 +72,7 @@ class ImagePickerAdapter(
 
             // 点击图片预览
             imageView.setOnClickListener {
-                // 修改处 1：获取实时位置
+                // 获取实时位置
                 val currentPos = bindingAdapterPosition
                 if (currentPos != RecyclerView.NO_POSITION) {
                     onImageClick(currentPos, uri)
@@ -81,7 +81,7 @@ class ImagePickerAdapter(
 
             // 点击删除按钮
             removeButton.setOnClickListener {
-                // 修改处 2：获取实时位置，代替原来的 position 参数
+                // 获取实时位置，代替原来的 position 参数
                 val currentPos = bindingAdapterPosition
                 // 确保位置有效（防止在动画移除过程中点击导致的越界崩溃）
                 if (currentPos != RecyclerView.NO_POSITION) {

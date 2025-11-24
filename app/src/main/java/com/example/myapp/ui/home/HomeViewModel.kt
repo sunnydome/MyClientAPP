@@ -1,45 +1,69 @@
 package com.example.myapp.ui.home
 
+import android.app.Application
+import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
-import androidx.lifecycle.ViewModel
-import com.example.myapp.ui.home.recyclerPostView.FeedRepository
+import com.example.myapp.data.database.AppDatabase
+import com.example.myapp.data.model.FeedItem
+import com.example.myapp.data.repository.PostRepository
 
 /**
  * HomeViewModel - 管理首页的数据
- * 为每个类别维护独立的LiveData
+ * 使用Repository模式获取数据
+ *
+ * 更新说明：使用新的数据层架构
  */
-class HomeViewModel : ViewModel() {
-    private val feedRepository = FeedRepository()
+class HomeViewModel(application: Application) : AndroidViewModel(application) {
 
-    // 为每个类别维护独立的LiveData
-    private val _feedsMap = mutableMapOf<String, MutableLiveData<List<FeedModel>>>()
+    // 通过application参数获取数据库和Repository
+    private val database: AppDatabase = AppDatabase.getInstance(application)
+    private val postRepository: PostRepository = PostRepository.getInstance(database)
+
+    // 当前选中的分类
+    private val _currentCategory = MutableLiveData<String>("发现")
+    val currentCategory: LiveData<String> = _currentCategory
+
+    // 为每个类别维护独立的LiveData缓存
+    private val feedsCache = mutableMapOf<String, LiveData<List<FeedItem>>>()
+
+    // 加载状态
+    private val _isLoading = MutableLiveData<Boolean>(false)
+    val isLoading: LiveData<Boolean> = _isLoading
+
+    // 错误信息
+    private val _error = MutableLiveData<String?>()
+    val error: LiveData<String?> = _error
 
     /**
      * 获取指定类别的Feed数据
      * @param category 类别名称
      * @return 对应类别的LiveData
      */
-    fun getFeedsByCategory(category: String): LiveData<List<FeedModel>> {
-        // 如果该类别的LiveData不存在，则创建
-        if (!_feedsMap.containsKey(category)) {
-            _feedsMap[category] = MutableLiveData<List<FeedModel>>()
+    fun getFeedsByCategory(category: String): LiveData<List<FeedItem>> {
+        return feedsCache.getOrPut(category) {
+            postRepository.getFeedsByCategory(category)
         }
-        return _feedsMap[category]!!
     }
 
     /**
-     * 根据Tab类别加载数据
-     * @param tabCategory 类别名称
+     * 加载指定Tab的数据
+     * @param category 类别
+     * @param forceRefresh 是否强制刷新
      */
-    fun loadDataForTab(tabCategory: String) {
-        // 从Repository获取数据
-        feedRepository.fetchFeedsByCategory(tabCategory).observeForever { feedList ->
-            // 更新对应类别的LiveData
-            if (!_feedsMap.containsKey(tabCategory)) {
-                _feedsMap[tabCategory] = MutableLiveData<List<FeedModel>>()
-            }
-            _feedsMap[tabCategory]?.value = feedList
+    fun loadDataForTab(category: String, forceRefresh: Boolean = false) {
+        _currentCategory.value = category
+
+        // 由于使用Room的LiveData，数据会自动更新
+        // 如果需要强制刷新（如下拉刷新），可以在这里触发网络请求
+        if (forceRefresh) {
+            // TODO: 实现网络刷新逻辑
+            // 目前使用本地数据库，数据会自动同步
+        }
+
+        // 确保缓存中有该类别的LiveData
+        if (!feedsCache.containsKey(category)) {
+            feedsCache[category] = postRepository.getFeedsByCategory(category)
         }
     }
 
@@ -48,27 +72,18 @@ class HomeViewModel : ViewModel() {
      * @param category 类别名称
      */
     fun refreshCategory(category: String) {
-        loadDataForTab(category)
+        loadDataForTab(category, forceRefresh = true)
     }
 
     /**
-     * 清除指定类别的数据
-     * @param category 类别名称
+     * 清除错误信息
      */
-    fun clearCategory(category: String) {
-        _feedsMap[category]?.value = emptyList()
-    }
-
-    /**
-     * 清除所有数据
-     */
-    fun clearAllData() {
-        _feedsMap.values.forEach { it.value = emptyList() }
+    fun clearError() {
+        _error.value = null
     }
 
     override fun onCleared() {
         super.onCleared()
-        // ViewModel销毁时清理资源
-        _feedsMap.clear()
+        feedsCache.clear()
     }
 }

@@ -14,6 +14,8 @@ import com.example.myapp.ui.home.recyclerPostView.FeedAdapter
 /**
  * Feed Fragment - 展示特定类别的Feed列表
  * @param category 类别名称（关注、发现、同城）
+ *
+ * 更新说明：适配新的FeedAdapter和数据层
  */
 class FeedFragment : Fragment() {
 
@@ -65,12 +67,29 @@ class FeedFragment : Fragment() {
         // 获取Activity级别的ViewModel（多个Fragment共享）
         homeViewModel = ViewModelProvider(requireActivity())[HomeViewModel::class.java]
 
-        // 初始化Adapter
-        feedAdapter = FeedAdapter(emptyList())
+        // 初始化Adapter（新版本不需要传入初始数据）
+        feedAdapter = FeedAdapter(
+            onItemClick = { feedItem ->
+                // 点击事件已在Adapter内部处理，会跳转到PostActivity
+                // 如果需要自定义处理，可以在这里实现
+                // 在这里进行跳转
+                val intent = android.content.Intent(requireContext(), com.example.myapp.ui.post.PostActivity::class.java).apply {
+                    putExtra(com.example.myapp.ui.post.PostActivity.EXTRA_POST_ID, feedItem.id)
+                }
+                startActivity(intent)
+            },
+            onLikeClick = { feedItem ->
+                // TODO: 实现点赞功能
+                // 可以通过ViewModel调用Repository
+            }
+        )
         feedRecyclerView.adapter = feedAdapter
 
         // 观察对应类别的数据
         observeData()
+
+        // 触发加载数据
+        homeViewModel.loadDataForTab(category, forceRefresh = false)
     }
 
     /**
@@ -82,12 +101,7 @@ class FeedFragment : Fragment() {
         }
     }
 
-    /**
-     * Fragment可见时加载数据
-     */
     override fun onResume() {
         super.onResume()
-        // 加载该类别的数据
-        homeViewModel.loadDataForTab(category)
     }
 }
