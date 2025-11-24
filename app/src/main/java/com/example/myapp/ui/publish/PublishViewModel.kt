@@ -14,6 +14,8 @@ class PublishViewModel : ViewModel() {
 
     companion object {
         const val MAX_IMAGE_COUNT = 9 // 最多选择9张图片
+        const val MAX_TITLE_LENGTH = 20 // 标题长度最多为20
+        const val MAX_CONTENT_LENGTH = 200 // 正文长度最多为200
     }
 
     // 当前发布内容的状态

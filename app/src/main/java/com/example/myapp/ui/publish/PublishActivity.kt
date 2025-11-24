@@ -1,6 +1,5 @@
 package com.example.myapp.ui.publish
 
-import android.app.ActivityOptions
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
@@ -114,6 +113,7 @@ class PublishActivity : FragmentActivity() {
                 }
             },
             onImageClick = { position, uri ->
+                // TODO: 考虑是否需要使用toast
                 // 点击图片预览（后续可实现大图预览）
                 Toast.makeText(this, "点击了图片 ${position + 1}", Toast.LENGTH_SHORT).show()
             },
@@ -130,6 +130,7 @@ class PublishActivity : FragmentActivity() {
 
     /**
      * 设置监听器
+     * 关心与UI交互
      */
     private fun setupListeners() {
         // 返回按钮
@@ -142,7 +143,12 @@ class PublishActivity : FragmentActivity() {
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
             override fun afterTextChanged(s: Editable?) {
-                viewModel.updateTitle(s?.toString() ?: "")
+                val title = s?.toString() ?:""
+                if(title.length > PublishViewModel.MAX_TITLE_LENGTH) {
+                    etTitle.setText(title.take(PublishViewModel.MAX_TITLE_LENGTH))
+                    etTitle.setSelection(PublishViewModel.MAX_TITLE_LENGTH)  // 保持光标在末尾
+                }
+                viewModel.updateTitle(title)
             }
         })
 
@@ -151,7 +157,12 @@ class PublishActivity : FragmentActivity() {
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
             override fun afterTextChanged(s: Editable?) {
-                viewModel.updateContent(s?.toString() ?: "")
+                val content = s?.toString() ?:""
+                if(content.length > PublishViewModel.MAX_CONTENT_LENGTH) {
+                    etTitle.setText(title.take(PublishViewModel.MAX_CONTENT_LENGTH))
+                    etTitle.setSelection(PublishViewModel.MAX_CONTENT_LENGTH)  // 保持光标在末尾
+                }
+                viewModel.updateContent(content)
             }
         })
 
@@ -168,6 +179,7 @@ class PublishActivity : FragmentActivity() {
 
     /**
      * 观察ViewModel数据
+     * 响应数据变化
      */
     private fun observeViewModel() {
         // 观察图片列表变化
