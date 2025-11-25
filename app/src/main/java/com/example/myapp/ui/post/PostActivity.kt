@@ -59,6 +59,7 @@ class PostActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_post)
 
+        supportPostponeEnterTransition()
         val postId = intent.getStringExtra(EXTRA_POST_ID)
         if (postId.isNullOrBlank()) {
             Toast.makeText(this, "帖子不存在", Toast.LENGTH_SHORT).show()
@@ -68,14 +69,17 @@ class PostActivity : AppCompatActivity() {
 
         postViewModel = ViewModelProvider(this)[PostViewModel::class.java]
 
-        initViews()
+        val imageTransName = intent.getStringExtra("extra_trans_name_image")
+        val cardTransName = intent.getStringExtra("extra_trans_name_card") // [新增]
+
+        initViews(imageTransName, cardTransName)
         setupListeners()
         observeViewModel()
 
         postViewModel.loadPost(postId)
     }
 
-    private fun initViews() {
+    private fun initViews(imageTransName: String?, cardTransName: String?) {
         // 1. 顶部栏
         ivBack = findViewById(R.id.home_return)
         ivAuthorAvatar = findViewById(R.id.post_user_avatar)
@@ -83,10 +87,20 @@ class PostActivity : AppCompatActivity() {
         btnFollow = findViewById(R.id.followButton)
         ivShare = findViewById(R.id.share_icon)
 
+        // 1. [新增] 设置根布局的 TransitionName
+        // 你的根布局 ID 是 main (CoordinatorLayout)
+        val rootView = findViewById<android.view.View>(R.id.main)
+        if (cardTransName != null) {
+            androidx.core.view.ViewCompat.setTransitionName(rootView, cardTransName)
+        }
         // 2. 中间内容
         viewPager2 = findViewById(R.id.view_pager)
         // 确保你的 PagerViewAdapter 已经改为支持 List<String>
-        pagerAdapter = PagerViewAdapter()
+        // 初始化 Adapter，传入 transitionName 和 回调
+        pagerAdapter = PagerViewAdapter(imageTransName) {
+            // [关键步骤 7] 图片加载好了，开始动画！
+            supportStartPostponedEnterTransition()
+        }
         viewPager2.adapter = pagerAdapter
 
         tvTitle = findViewById(R.id.post_description)

@@ -3,6 +3,7 @@ package com.example.myapp.ui.post.pagerView
 import android.graphics.drawable.Drawable
 import android.view.View
 import android.widget.ImageView
+import androidx.core.view.ViewCompat
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.DataSource
@@ -14,17 +15,19 @@ import com.example.myapp.R
 class PagerViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
     private val mImageView: ImageView = itemView.findViewById(R.id.iv_image)
 
-    fun bindData(url: String) {
+    fun bindData(url: String, transitionName: String?, onImageLoaded: () -> Unit) {
+
+        if (transitionName != null) {
+            ViewCompat.setTransitionName(mImageView, transitionName)
+        }
+
         Glide.with(itemView.context)
             .load(url)
             .placeholder(R.drawable.placeholder_image)
             .listener(object : RequestListener<Drawable> {
-                override fun onLoadFailed(
-                    e: GlideException?,
-                    model: Any?,
-                    target: Target<Drawable>?,
-                    isFirstResource: Boolean
-                ): Boolean {
+                override fun onLoadFailed(e: GlideException?, model: Any?, target: Target<Drawable>?, isFirstResource: Boolean): Boolean {
+                    // 即使失败也要开始动画，否则页面会卡死在空白状态
+                    onImageLoaded()
                     return false
                 }
 
@@ -35,6 +38,7 @@ class PagerViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
                     dataSource: DataSource?,
                     isFirstResource: Boolean
                 ): Boolean {
+                    onImageLoaded()
                     resource?.let { drawable ->
                         val viewWidth = mImageView.width
                         val viewHeight = mImageView.height

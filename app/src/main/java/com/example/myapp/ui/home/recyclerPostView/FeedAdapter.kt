@@ -8,6 +8,7 @@ import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.TextView
 import androidx.constraintlayout.widget.ConstraintLayout
+import androidx.core.view.ViewCompat
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
@@ -24,7 +25,7 @@ import com.example.myapp.ui.post.PostActivity
  * 更新说明：使用新的FeedItem数据模型
  */
 class FeedAdapter(
-    private val onItemClick: ((FeedItem) -> Unit)? = null,
+    private val onItemClick: ((FeedItem, View, View) -> Unit)? = null,
     private val onLikeClick: ((FeedItem) -> Unit)? = null
 ) : ListAdapter<FeedItem, FeedAdapter.FeedViewHolder>(FeedDiffCallback()) {
 
@@ -100,11 +101,17 @@ class FeedAdapter(
             // 点赞数量（如果有的话）
             likeCount?.text = formatCount(feed.likeCount)
 
+            // 必须保证这个名字在当前界面是唯一的，通常用 "image_" + id
+            val transitionName = "trans_image_${feed.id}"
+            ViewCompat.setTransitionName(imageView, transitionName)
+
+            // 2. [新增] 给整个卡片(itemView)设置 transitionName
+            val cardTransitionName = "trans_card_${feed.id}"
+            ViewCompat.setTransitionName(itemView, cardTransitionName)
             // 点击事件 - 跳转到详情页
             itemView.setOnClickListener {
                 if (onItemClick != null) {
-                    onItemClick.invoke(feed)
-
+                    onItemClick.invoke(feed, imageView, imageView)
                 } else {
                     // 默认行为：跳转到帖子详情页
                     val context = itemView.context

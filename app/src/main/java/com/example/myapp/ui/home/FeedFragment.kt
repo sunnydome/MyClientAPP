@@ -1,15 +1,20 @@
 package com.example.myapp.ui.home
 
+import android.content.Intent
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.core.app.ActivityOptionsCompat
+import androidx.core.view.ViewCompat
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
 import androidx.recyclerview.widget.RecyclerView
 import androidx.recyclerview.widget.StaggeredGridLayoutManager
 import com.example.myapp.R
 import com.example.myapp.ui.home.recyclerPostView.FeedAdapter
+import com.example.myapp.ui.post.PostActivity
+import androidx.core.util.Pair
 
 /**
  * Feed Fragment - 展示特定类别的Feed列表
@@ -69,14 +74,24 @@ class FeedFragment : Fragment() {
 
         // 初始化Adapter（新版本不需要传入初始数据）
         feedAdapter = FeedAdapter(
-            onItemClick = { feedItem ->
-                // 点击事件已在Adapter内部处理，会跳转到PostActivity
-                // 如果需要自定义处理，可以在这里实现
-                // 在这里进行跳转
-                val intent = android.content.Intent(requireContext(), com.example.myapp.ui.post.PostActivity::class.java).apply {
+            onItemClick = { feedItem, sharedCardView, sharedImageView ->
+                val intent = Intent(requireContext(), PostActivity::class.java).apply {
                     putExtra(com.example.myapp.ui.post.PostActivity.EXTRA_POST_ID, feedItem.id)
+
+                    // 传递两个 TransitionName 到详情页
+                    putExtra("extra_trans_name_image", ViewCompat.getTransitionName(sharedImageView))
+                    putExtra("extra_trans_name_card", ViewCompat.getTransitionName(sharedCardView))
                 }
-                startActivity(intent)
+
+                // [关键修改] 创建包含两个共享元素的动画选项
+                // Pair.create(View, TransitionName)
+                val options = ActivityOptionsCompat.makeSceneTransitionAnimation(
+                    requireActivity(),
+                    Pair.create(sharedCardView, ViewCompat.getTransitionName(sharedCardView)),
+                    Pair.create(sharedImageView, ViewCompat.getTransitionName(sharedImageView))
+                )
+
+                startActivity(intent, options.toBundle())
             },
             onLikeClick = { feedItem ->
                 // --- 修改开始 ---
