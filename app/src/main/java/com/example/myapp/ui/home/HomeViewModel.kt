@@ -1,5 +1,7 @@
 package com.example.myapp.ui.home
 
+import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.launch
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.LiveData
@@ -67,6 +69,17 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    /**
+     * 切换点赞状态
+     * 启动协程调用 Repository，数据库更新后 LiveData 会自动通知 UI 刷新
+     */
+    fun toggleLike(postId: String) {
+        viewModelScope.launch {
+            // 调用仓库层的切换点赞方法
+            // Repository 内部会更新数据库中的 isLiked 和 likeCount 字段
+            postRepository.toggleLike(postId)
+        }
+    }
     /**
      * 刷新指定类别的数据
      * @param category 类别名称

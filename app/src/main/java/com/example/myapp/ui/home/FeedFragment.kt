@@ -79,8 +79,10 @@ class FeedFragment : Fragment() {
                 startActivity(intent)
             },
             onLikeClick = { feedItem ->
-                // TODO: 实现点赞功能
-                // 可以通过ViewModel调用Repository
+                // --- 修改开始 ---
+                // 调用 ViewModel 的方法，传入帖子 ID
+                homeViewModel.toggleLike(feedItem.id)
+                // --- 修改结束 ---
             }
         )
         feedRecyclerView.adapter = feedAdapter

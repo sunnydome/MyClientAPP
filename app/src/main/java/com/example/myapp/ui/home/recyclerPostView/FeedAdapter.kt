@@ -7,6 +7,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.TextView
+import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
@@ -52,16 +53,23 @@ class FeedAdapter(
         private val userAvatar: ImageView = itemView.findViewById(R.id.item_user_avatar)
         // 可选的点赞按钮和计数（如果布局中有的话）
         // TODO: 添加点赞按钮
-        //private val likeButton: ImageView? = itemView.findViewById(R.id.item_like_button)
-        //private val likeCount: TextView? = itemView.findViewById(R.id.item_like_count)
+        private val likeButton: ImageView? = itemView.findViewById(R.id.item_like_button)
+        private val likeCount: TextView? = itemView.findViewById(R.id.item_like_count)
 
         fun bind(feed: FeedItem) {
-            // 加载封面图
+            // 1. 动态设置图片的高度比例 (实现瀑布流的核心)
+            val layoutParams = imageView.layoutParams as ConstraintLayout.LayoutParams
+
+            // 设置宽高比。DimensionRatio 格式通常为 "width:height" 或者直接是一个浮点数代表 w/h
+            // 假设 feed.coverAspectRatio 是 width/height (例如 0.75)
+            layoutParams.dimensionRatio = String.format("%f:1", feed.coverAspectRatio)
+            imageView.layoutParams = layoutParams
+
+            // 2. 加载封面图
             Glide.with(itemView.context)
                 .load(feed.coverUrl)
-                .placeholder(R.drawable.placeholder_image)
+                .placeholder(R.drawable.placeholder_image) // 建议使用纯色背景作为占位图，体验更好
                 .error(R.drawable.error_image)
-                .dontAnimate()
                 .diskCacheStrategy(DiskCacheStrategy.ALL)
                 .into(imageView)
 
@@ -82,24 +90,22 @@ class FeedAdapter(
                 .into(userAvatar)
 
             // 点赞按钮状态（如果有的话）
-            //likeButton?.let { button ->
-            //    button.isSelected = feed.isLiked
-            //    button.setOnClickListener {
-            //        onLikeClick?.invoke(feed)
-            //    }
-            //}
+            likeButton?.let { button ->
+                button.isSelected = feed.isLiked
+                button.setOnClickListener {
+                    onLikeClick?.invoke(feed)
+                }
+            }
 
             // 点赞数量（如果有的话）
-            //likeCount?.text = formatCount(feed.likeCount)
+            likeCount?.text = formatCount(feed.likeCount)
 
             // 点击事件 - 跳转到详情页
             itemView.setOnClickListener {
                 if (onItemClick != null) {
-                    Log.d("feed", "here")
                     onItemClick.invoke(feed)
 
                 } else {
-                    Log.d("feed", "there")
                     // 默认行为：跳转到帖子详情页
                     val context = itemView.context
                     val intent = Intent(context, PostActivity::class.java).apply {

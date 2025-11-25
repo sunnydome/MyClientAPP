@@ -6,7 +6,9 @@ import androidx.recyclerview.widget.RecyclerView
 import com.example.myapp.R
 
 class PagerViewAdapter : RecyclerView.Adapter<PagerViewHolder>() {
-    private var mList: List<Int> = ArrayList()
+    // 修改泛型为 String
+    private var mList: List<String> = ArrayList()
+
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): PagerViewHolder {
         val itemView = LayoutInflater.from(parent.context).inflate(R.layout.item_picture, parent, false)
         return PagerViewHolder(itemView)
@@ -16,8 +18,10 @@ class PagerViewAdapter : RecyclerView.Adapter<PagerViewHolder>() {
         holder.bindData(mList[position])
     }
 
-    fun setList(list: List<Int>) {
+    // 接收 String 列表
+    fun setList(list: List<String>) {
         mList = list
+        notifyDataSetChanged()
     }
 
     override fun getItemCount(): Int {
