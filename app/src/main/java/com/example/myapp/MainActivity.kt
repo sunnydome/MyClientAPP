@@ -17,8 +17,6 @@ import com.google.android.material.floatingactionbutton.FloatingActionButton
 /**
  * 主Activity - 应用容器
  * 管理底部导航和顶级Fragment
- *
- * 修复说明：使用 show/hide 代替 replace 来管理Fragment，避免ViewPager2状态恢复问题
  */
 class MainActivity : FragmentActivity() {
 
