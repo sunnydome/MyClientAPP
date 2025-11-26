@@ -2,6 +2,7 @@ package com.example.myapp.ui.post
 
 import android.os.Bundle
 import android.util.Log
+import android.view.View
 import android.view.inputmethod.EditorInfo
 import android.widget.Button
 import android.widget.EditText
@@ -9,6 +10,7 @@ import android.widget.ImageView
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.app.SharedElementCallback
 import androidx.lifecycle.ViewModelProvider
 import androidx.recyclerview.widget.ConcatAdapter
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -59,7 +61,7 @@ class PostActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_post)
 
-        supportPostponeEnterTransition()
+
         val postId = intent.getStringExtra(EXTRA_POST_ID)
         if (postId.isNullOrBlank()) {
             Toast.makeText(this, "帖子不存在", Toast.LENGTH_SHORT).show()
@@ -72,6 +74,22 @@ class PostActivity : AppCompatActivity() {
         val imageTransName = intent.getStringExtra("extra_trans_name_image")
         val cardTransName = intent.getStringExtra("extra_trans_name_card") // [新增]
 
+        // [核心修改] 设置进入/返回的共享元素回调
+        setEnterSharedElementCallback(object : SharedElementCallback() {
+            override fun onMapSharedElements(names: MutableList<String>?, sharedElements: MutableMap<String, View>?) {
+                // 检查 ViewPager 是否已经初始化，且当前选中的不是第一张图
+                if (::viewPager2.isInitialized && viewPager2.currentItem != 0) {
+                    // 如果不是第一张图，说明图片对不上了
+                    // 我们从共享元素名单中，把“图片”移除，只保留“卡片”
+                    // 这样图片就会淡出，而不是变形缩回
+                    if (imageTransName != null) {
+                        names?.remove(imageTransName)
+                        sharedElements?.remove(imageTransName)
+                    }
+                }
+            }
+        })
+        supportPostponeEnterTransition()
         initViews(imageTransName, cardTransName)
         setupListeners()
         observeViewModel()
@@ -131,9 +149,12 @@ class PostActivity : AppCompatActivity() {
 
     private fun setupListeners() {
         // 返回按钮
+        // 1. 修改返回按钮的点击事件
         ivBack.setOnClickListener {
-            Log.d("post1", "here")
-            finish()
+            // [关键修改] 不要调用 finish()
+            // finish() 会直接杀掉页面，没有动画
+            // 这相当于告诉系统：“用户触发了返回”，系统会自动处理转场动画
+            onBackPressedDispatcher.onBackPressed()
         }
 
         // 关注按钮 (示例逻辑)
