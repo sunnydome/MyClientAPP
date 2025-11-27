@@ -2,9 +2,11 @@ package com.example.myapp.ui.home
 
 import android.content.Intent
 import android.os.Bundle
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.Toast
 import androidx.core.app.ActivityOptionsCompat
 import androidx.core.view.ViewCompat
 import androidx.fragment.app.Fragment
@@ -15,6 +17,7 @@ import com.example.myapp.R
 import com.example.myapp.ui.home.recyclerPostView.FeedAdapter
 import com.example.myapp.ui.post.PostActivity
 import androidx.core.util.Pair
+import androidx.fragment.app.viewModels
 
 /**
  * Feed Fragment - 展示特定类别的Feed列表
@@ -28,7 +31,7 @@ class FeedFragment : Fragment() {
     private lateinit var feedAdapter: FeedAdapter
     private lateinit var homeViewModel: HomeViewModel
     private var category: String = ""
-
+    private val testViewModel: TestViewModel by viewModels()
     companion object {
         private const val ARG_CATEGORY = "category"
 
@@ -101,6 +104,19 @@ class FeedFragment : Fragment() {
             }
         )
         feedRecyclerView.adapter = feedAdapter
+
+        // 观察数据
+        testViewModel.feeds.observe(viewLifecycleOwner) { feeds ->
+            Log.d("Test", "收到 ${feeds.size} 条Feed")
+            // 暂时只打印，不更新UI
+        }
+
+        testViewModel.error.observe(viewLifecycleOwner) { error ->
+            error?.let { Toast.makeText(context, it, Toast.LENGTH_SHORT).show() }
+        }
+
+        // 触发请求
+        testViewModel.loadFeeds("发现")
 
         // 观察对应类别的数据
         observeData()
