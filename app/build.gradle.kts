@@ -43,7 +43,21 @@ dependencies {
     implementation("androidx.room:room-runtime:2.6.1")
     implementation("androidx.room:room-ktx:2.6.1")
     kapt("androidx.room:room-compiler:2.6.1")
-
+    // Retrofit 核心库
+    implementation("com.squareup.retrofit2:retrofit:2.9.0")
+    // Gson 转换器
+    implementation("com.squareup.retrofit2:converter-gson:2.9.0")
+    // OkHttp 核心库
+    implementation("com.squareup.okhttp3:okhttp:4.12.0")
+    // OkHttp 日志拦截器
+    implementation("com.squareup.okhttp3:logging-interceptor:4.12.0")
+    // Gson
+    implementation("com.google.code.gson:gson:2.10.1")
+    // ==================== 协程 ====================
+    // Kotlin 协程核心
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3")
+    // Kotlin 协程 Android 支持
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
     // Kotlin Coroutines
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3")

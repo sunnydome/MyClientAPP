@@ -1,61 +1,47 @@
 package com.example.myapp.data.repository
 
 import androidx.lifecycle.LiveData
-import androidx.lifecycle.MediatorLiveData
 import com.example.myapp.data.database.AppDatabase
-import com.example.myapp.data.mock.MockDataProvider
 import com.example.myapp.data.model.Comment
-import com.example.myapp.data.model.CommentWithReplies
+import com.example.myapp.data.network.RetrofitClient
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
-/**
- * 评论数据仓库
- * 负责评论相关的数据操作
- */
 class CommentRepository(private val database: AppDatabase) {
 
     private val commentDao = database.commentDao()
     private val postDao = database.postDao()
+    private val commentApi = RetrofitClient.commentApi // 获取 API
 
     /**
-     * 获取帖子的一级评论
+     * 获取帖子的一级评论 (观察本地)
      */
     fun getTopLevelComments(postId: String): LiveData<List<Comment>> {
         return commentDao.getTopLevelComments(postId)
     }
 
     /**
-     * 获取评论的回复
+     * 刷新评论列表 (网络 -> 数据库)
      */
-    fun getReplies(commentId: String): LiveData<List<Comment>> {
-        return commentDao.getReplies(commentId)
-    }
+    suspend fun refreshComments(postId: String, page: Int = 1): Result<Unit> {
+        return withContext(Dispatchers.IO) {
+            try {
+                val response = commentApi.getComments(postId, page)
+                if (response.isSuccess() && response.data != null) {
+                    val comments = response.data
+                    // 插入数据库
+                    commentDao.insertAll(comments)
+                    // 可选：如果这是第一页，可以把该帖子的旧评论清理一下，防止缓存堆积
+                    // if (page == 1) commentDao.deleteByPostId(postId)
 
-    /**
-     * 获取评论及其回复（组合数据）
-     */
-    fun getCommentsWithReplies(postId: String): LiveData<List<CommentWithReplies>> {
-        val result = MediatorLiveData<List<CommentWithReplies>>()
-
-        val topLevelComments = commentDao.getTopLevelComments(postId)
-
-        result.addSource(topLevelComments) { comments ->
-            // 这里简化处理，实际应该异步加载回复
-            // 可以在ViewModel中使用协程处理
-            result.value = comments.map { comment ->
-                CommentWithReplies(comment, emptyList())
+                    Result.success(Unit)
+                } else {
+                    Result.failure(Exception(response.message))
+                }
+            } catch (e: Exception) {
+                Result.failure(e)
             }
         }
-
-        return result
-    }
-
-    /**
-     * 获取帖子的所有评论
-     */
-    fun getAllComments(postId: String): LiveData<List<Comment>> {
-        return commentDao.getAllComments(postId)
     }
 
     /**
@@ -69,65 +55,32 @@ class CommentRepository(private val database: AppDatabase) {
     ): Result<Comment> {
         return withContext(Dispatchers.IO) {
             try {
-                // 获取当前用户信息
-                val currentUserId = MockDataProvider.getCurrentUserId()
-                val currentUser = database.userDao().getUserByIdSync(currentUserId)
-                    ?: return@withContext Result.failure(Exception("用户不存在"))
-
-                val comment = Comment(
-                    id = MockDataProvider.generateCommentId(),
-                    postId = postId,
-                    authorId = currentUserId,
-                    authorName = currentUser.userName,
-                    authorAvatar = currentUser.avatarUrl,
+                val request = com.example.myapp.data.network.api.AddCommentRequest(
                     content = content,
-                    parentId = parentId,
-                    replyToName = replyToName
+                    parentId = parentId
+                    // replyToUserId 根据实际后端需求传递
                 )
 
-                commentDao.insert(comment)
+                val response = commentApi.addComment(postId, request)
 
-                // 更新帖子评论数
-                postDao.updateCommentCount(postId, 1)
+                if (response.isSuccess() && response.data != null) {
+                    val newComment = response.data
 
-                // 如果是回复，更新父评论的回复数
-                parentId?.let {
-                    commentDao.updateReplyCount(it, 1)
-                }
+                    // 1. 插入新评论到本地
+                    commentDao.insert(newComment)
 
-                Result.success(comment)
-            } catch (e: Exception) {
-                Result.failure(e)
-            }
-        }
-    }
+                    // 2. 更新帖子的评论计数 (本地 +1)
+                    postDao.updateCommentCount(postId, 1)
 
-    /**
-     * 删除评论
-     */
-    suspend fun deleteComment(commentId: String): Result<Unit> {
-        return withContext(Dispatchers.IO) {
-            try {
-                val comment = commentDao.getCommentByIdSync(commentId)
-                    ?: return@withContext Result.failure(Exception("评论不存在"))
-
-                // 如果是一级评论，同时删除所有回复
-                if (comment.isTopLevel()) {
-                    val replyCount = commentDao.getReplyCount(commentId)
-                    commentDao.deleteWithReplies(commentId)
-                    // 更新帖子评论数（一级评论 + 回复数）
-                    postDao.updateCommentCount(comment.postId, -(1 + replyCount))
-                } else {
-                    commentDao.deleteById(commentId)
-                    // 更新帖子评论数
-                    postDao.updateCommentCount(comment.postId, -1)
-                    // 更新父评论回复数
-                    comment.parentId?.let {
-                        commentDao.updateReplyCount(it, -1)
+                    // 3. 如果是回复，更新父评论回复数
+                    parentId?.let {
+                        commentDao.updateReplyCount(it, 1)
                     }
-                }
 
-                Result.success(Unit)
+                    Result.success(newComment)
+                } else {
+                    Result.failure(Exception(response.message))
+                }
             } catch (e: Exception) {
                 Result.failure(e)
             }
@@ -140,14 +93,15 @@ class CommentRepository(private val database: AppDatabase) {
     suspend fun toggleLike(commentId: String): Result<Boolean> {
         return withContext(Dispatchers.IO) {
             try {
-                val comment = commentDao.getCommentByIdSync(commentId)
-                    ?: return@withContext Result.failure(Exception("评论不存在"))
-
-                val newLikeStatus = !comment.isLiked
-                val delta = if (newLikeStatus) 1 else -1
-                commentDao.updateLikeStatus(commentId, newLikeStatus, delta)
-
-                Result.success(newLikeStatus)
+                val response = commentApi.toggleCommentLike(commentId)
+                if (response.isSuccess() && response.data != null) {
+                    val isLiked = response.data
+                    val delta = if (isLiked) 1 else -1
+                    commentDao.updateLikeStatus(commentId, isLiked, delta)
+                    Result.success(isLiked)
+                } else {
+                    Result.failure(Exception(response.message))
+                }
             } catch (e: Exception) {
                 Result.failure(e)
             }
@@ -155,11 +109,42 @@ class CommentRepository(private val database: AppDatabase) {
     }
 
     /**
-     * 获取评论数量
+     * 删除评论 (网络 -> 数据库)
      */
-    suspend fun getCommentCount(postId: String): Int {
+    suspend fun deleteComment(commentId: String): Result<Unit> {
         return withContext(Dispatchers.IO) {
-            commentDao.getCommentCount(postId)
+            try {
+                // 1. 先查询本地评论，为了后续更新计数
+                val comment = commentDao.getCommentByIdSync(commentId)
+                    ?: return@withContext Result.failure(Exception("本地评论不存在"))
+
+                // 2. 调用网络删除接口
+                val response = commentApi.deleteComment(commentId)
+
+                if (response.isSuccess()) {
+                    // 3. 网络删除成功后，清理本地数据
+                    // 逻辑与旧版本一致：如果是以及评论，要连带删除回复；更新帖子评论数
+                    if (comment.isTopLevel()) {
+                        val replyCount = commentDao.getReplyCount(commentId)
+                        commentDao.deleteWithReplies(commentId)
+                        // 减少计数：1条主评论 + N条回复
+                        postDao.updateCommentCount(comment.postId, -(1 + replyCount))
+                    } else {
+                        commentDao.deleteById(commentId)
+                        // 减少计数：1条回复
+                        postDao.updateCommentCount(comment.postId, -1)
+                        // 更新父评论的回复数
+                        comment.parentId?.let {
+                            commentDao.updateReplyCount(it, -1)
+                        }
+                    }
+                    Result.success(Unit)
+                } else {
+                    Result.failure(Exception(response.message))
+                }
+            } catch (e: Exception) {
+                Result.failure(e)
+            }
         }
     }
 

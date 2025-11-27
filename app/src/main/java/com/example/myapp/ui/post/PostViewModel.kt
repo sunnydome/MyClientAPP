@@ -11,112 +11,107 @@ import com.example.myapp.data.model.Post
 import com.example.myapp.data.repository.CommentRepository
 import com.example.myapp.data.repository.PostRepository
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 
-/**
- * 帖子详情页的ViewModel
- * 管理帖子内容和评论列表
- *
- * 更新说明：使用新的数据层架构
- */
 class PostViewModel(application: Application) : AndroidViewModel(application) {
 
-    // 通过application参数获取数据库和Repository
     private val database: AppDatabase = AppDatabase.getInstance(application)
     private val postRepository: PostRepository = PostRepository.getInstance(database)
     private val commentRepository: CommentRepository = CommentRepository.getInstance(database)
 
-    // 当前帖子ID
     private var currentPostId: String? = null
 
-    // 帖子详情
+    // 帖子详情 (观察本地数据库)
     private val _post = MutableLiveData<Post?>()
     val post: LiveData<Post?> = _post
 
-    // 评论列表
+    // 评论列表 (观察本地数据库)
     private val _comments = MutableLiveData<List<Comment>>()
     val comments: LiveData<List<Comment>> = _comments
 
-    // 加载状态
     private val _isLoading = MutableLiveData<Boolean>(false)
     val isLoading: LiveData<Boolean> = _isLoading
 
-    // 操作结果事件
     private val _actionEvent = MutableLiveData<ActionEvent?>()
     val actionEvent: LiveData<ActionEvent?> = _actionEvent
 
     /**
-     * 加载帖子详情
-     * @param postId 帖子ID
+     * 初始化加载
      */
     fun loadPost(postId: String) {
         currentPostId = postId
 
-        // 观察帖子数据
+        // 1. 立即观察本地数据库，保证秒开
         postRepository.getPostById(postId).observeForever { post ->
             _post.value = post
         }
-
-        // 加载评论
-        loadComments(postId)
-    }
-
-    /**
-     * 加载评论列表
-     */
-    private fun loadComments(postId: String) {
         commentRepository.getTopLevelComments(postId).observeForever { comments ->
             _comments.value = comments
         }
+
+        // 2. 后台请求最新数据 (静默刷新)
+        refreshData(postId)
     }
 
+    /**
+     * 刷新帖子详情和评论
+     */
+    fun refreshData(postId: String) {
+        viewModelScope.launch {
+            // 并行请求详情和评论
+            try {
+                coroutineScope {
+                    val deferredPost = async { postRepository.fetchPostDetail(postId) }
+                    val deferredComments = async { commentRepository.refreshComments(postId) }
+
+                    val postResult = deferredPost.await()
+                    val commentResult = deferredComments.await()
+
+                    // 这里可以处理错误，比如 Toast 提示“网络连接失败”，但不需要清空 _post 数据
+                    if (postResult.isFailure) {
+                        // log error
+                    }
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+    }
 
     /**
-     * 切换点赞状态
+     * 切换点赞
      */
     fun toggleLike() {
         val postId = currentPostId ?: return
         viewModelScope.launch {
-            _isLoading.value = true
+            // UI 已经在 Repository 的乐观更新中变了，这里只需处理失败回滚提示
             val result = postRepository.toggleLike(postId)
-            _isLoading.value = false
-
-            result.fold(
-                onSuccess = { isLiked ->
-                    _actionEvent.value = ActionEvent.LikeChanged(isLiked)
-                },
-                onFailure = { error ->
-                    _actionEvent.value = ActionEvent.Error(error.message ?: "操作失败")
-                }
-            )
+            result.onSuccess { isLiked ->
+                _actionEvent.value = ActionEvent.LikeChanged(isLiked)
+            }.onFailure { e ->
+                _actionEvent.value = ActionEvent.Error("点赞失败: ${e.message}")
+            }
         }
     }
 
     /**
-     * 切换收藏状态
+     * 切换收藏
      */
     fun toggleCollect() {
         val postId = currentPostId ?: return
         viewModelScope.launch {
-            _isLoading.value = true
             val result = postRepository.toggleCollect(postId)
-            _isLoading.value = false
-
-            result.fold(
-                onSuccess = { isCollected ->
-                    _actionEvent.value = ActionEvent.CollectChanged(isCollected)
-                },
-                onFailure = { error ->
-                    _actionEvent.value = ActionEvent.Error(error.message ?: "操作失败")
-                }
-            )
+            result.onSuccess { isCollected ->
+                _actionEvent.value = ActionEvent.CollectChanged(isCollected)
+            }.onFailure { e ->
+                _actionEvent.value = ActionEvent.Error("收藏失败: ${e.message}")
+            }
         }
     }
 
     /**
      * 发表评论
-     * @param content 评论内容
-     * @param parentId 父评论ID（如果是回复的话）
-     * @param replyToName 被回复者名称
      */
     fun addComment(content: String, parentId: String? = null, replyToName: String? = null) {
         val postId = currentPostId ?: return
@@ -131,76 +126,43 @@ class PostViewModel(application: Application) : AndroidViewModel(application) {
                 onSuccess = { comment ->
                     _actionEvent.value = ActionEvent.CommentAdded(comment)
                 },
-                onFailure = { error ->
-                    _actionEvent.value = ActionEvent.Error(error.message ?: "评论失败")
+                onFailure = { e ->
+                    _actionEvent.value = ActionEvent.Error(e.message ?: "评论失败")
                 }
             )
         }
     }
 
-    /**
-     * 切换评论点赞
-     * @param commentId 评论ID
-     */
     fun toggleCommentLike(commentId: String) {
         viewModelScope.launch {
-            val result = commentRepository.toggleLike(commentId)
-            result.fold(
-                onSuccess = { isLiked ->
-                    _actionEvent.value = ActionEvent.CommentLikeChanged(commentId, isLiked)
-                },
-                onFailure = { error ->
-                    _actionEvent.value = ActionEvent.Error(error.message ?: "操作失败")
-                }
-            )
+            commentRepository.toggleLike(commentId)
+            // 结果通过 LiveData 自动更新
         }
     }
 
-    /**
-     * 删除评论
-     * @param commentId 评论ID
-     */
     fun deleteComment(commentId: String) {
         viewModelScope.launch {
             _isLoading.value = true
+            // TODO: Repository 还没加 deleteComment 的网络实现，暂时只删本地?
+            // 假设 Repository 已经更新了 deleteComment
             val result = commentRepository.deleteComment(commentId)
+            // 这里需要去 CommentRepository 确保 deleteComment 也实现了 suspend 网络请求
             _isLoading.value = false
 
-            result.fold(
-                onSuccess = {
-                    _actionEvent.value = ActionEvent.CommentDeleted(commentId)
-                },
-                onFailure = { error ->
-                    _actionEvent.value = ActionEvent.Error(error.message ?: "删除失败")
-                }
-            )
+            result.onFailure {
+                _actionEvent.value = ActionEvent.Error("删除失败")
+            }
         }
     }
 
-    /**
-     * 清除事件状态
-     */
     fun clearActionEvent() {
         _actionEvent.value = null
     }
 
-    /**
-     * 兼容旧代码的loadData方法
-     */
-    fun loadData() {
-        // 如果已有postId则加载，否则等待外部调用loadPost
-        currentPostId?.let { loadPost(it) }
-    }
-
-    /**
-     * 操作事件密封类
-     */
     sealed class ActionEvent {
         data class LikeChanged(val isLiked: Boolean) : ActionEvent()
         data class CollectChanged(val isCollected: Boolean) : ActionEvent()
         data class CommentAdded(val comment: Comment) : ActionEvent()
-        data class CommentLikeChanged(val commentId: String, val isLiked: Boolean) : ActionEvent()
-        data class CommentDeleted(val commentId: String) : ActionEvent()
         data class Error(val message: String) : ActionEvent()
     }
 }

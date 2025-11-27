@@ -85,13 +85,13 @@ abstract class AppDatabase : RoomDatabase() {
          */
         private suspend fun populateDatabase(database: AppDatabase) {
             // 插入模拟用户
-            database.userDao().insertAll(MockDataProvider.getMockUsers())
+            //database.userDao().insertAll(MockDataProvider.getMockUsers())
 
             // 插入模拟帖子
-            database.postDao().insertAll(MockDataProvider.getMockPosts())
+            //database.postDao().insertAll(MockDataProvider.getMockPosts())
 
             // 插入模拟评论
-            database.commentDao().insertAll(MockDataProvider.getMockComments())
+            //database.commentDao().insertAll(MockDataProvider.getMockComments())
         }
     }
 }

@@ -18,6 +18,9 @@ interface PostDao {
     @Query("SELECT * FROM posts WHERE id = :postId")
     suspend fun getPostByIdSync(postId: String): Post?
 
+    // [新增] 用于刷新列表时清除旧缓存
+    @Query("DELETE FROM posts WHERE category = :category")
+    suspend fun deleteByCategory(category: String)
     @Query("SELECT * FROM posts WHERE isDraft = 0 ORDER BY publishTime DESC")
     fun getAllPosts(): LiveData<List<Post>>
 
