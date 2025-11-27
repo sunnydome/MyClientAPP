@@ -1,6 +1,10 @@
 package com.example.myapp.data.network
 
+import com.example.myapp.data.network.api.CommentApi
+import com.example.myapp.data.network.api.FileApi
+import com.example.myapp.data.network.api.PostApi
 import com.example.myapp.data.network.api.SimpleApi
+import com.example.myapp.data.network.api.UserApi
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
@@ -8,9 +12,6 @@ import retrofit2.converter.gson.GsonConverterFactory
 import java.util.concurrent.TimeUnit
 
 /**
- * 阶段1：最简单的Retrofit客户端
- *
- * 学习要点：
  * 1. object 单例模式 - 整个应用只有一个实例
  * 2. lazy 延迟初始化 - 第一次使用时才创建
  * 3. Retrofit.Builder 构建器模式
@@ -48,11 +49,19 @@ object RetrofitClient {
             .build()
     }
 
-    /**
-     * API接口实例
-     * 使用方式: SimpleRetrofitClient.api.getFeeds(...)
-     */
-    val api: SimpleApi by lazy {
-        retrofit.create(SimpleApi::class.java)
+    val postApi: PostApi by lazy {
+        retrofit.create(PostApi::class.java)
+    }
+
+    val userApi: UserApi by lazy {
+        retrofit.create(UserApi::class.java)
+    }
+
+    val commentApi: CommentApi by lazy {
+        retrofit.create(CommentApi::class.java)
+    }
+
+    val fileApi: FileApi by lazy {
+        retrofit.create(FileApi::class.java)
     }
 }
