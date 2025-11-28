@@ -5,37 +5,30 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.Toast
 import androidx.core.app.ActivityOptionsCompat
+import androidx.core.util.Pair
 import androidx.core.view.ViewCompat
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
 import androidx.recyclerview.widget.RecyclerView
 import androidx.recyclerview.widget.StaggeredGridLayoutManager
+import androidx.swiperefreshlayout.widget.SwipeRefreshLayout // [新增导入]
 import com.example.myapp.R
 import com.example.myapp.ui.home.recyclerPostView.FeedAdapter
 import com.example.myapp.ui.post.PostActivity
-import androidx.core.util.Pair
-import androidx.fragment.app.viewModels
 
-/**
- * Feed Fragment - 展示特定类别的Feed列表
- * @param category 类别名称（关注、发现、同城）
- *
- * 更新说明：适配新的FeedAdapter和数据层
- */
 class FeedFragment : Fragment() {
 
     private lateinit var feedRecyclerView: RecyclerView
     private lateinit var feedAdapter: FeedAdapter
     private lateinit var homeViewModel: HomeViewModel
+    private lateinit var swipeRefreshLayout: SwipeRefreshLayout // [新增变量]
+
     private var category: String = ""
+
     companion object {
         private const val ARG_CATEGORY = "category"
-
-        /**
-         * 创建Fragment实例的工厂方法
-         * @param category 类别名称
-         */
         fun newInstance(category: String): FeedFragment {
             val fragment = FeedFragment()
             val args = Bundle()
@@ -47,14 +40,11 @@ class FeedFragment : Fragment() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        // 从arguments中获取类别
         category = arguments?.getString(ARG_CATEGORY) ?: "发现"
     }
 
     override fun onCreateView(
-        inflater: LayoutInflater,
-        container: ViewGroup?,
-        savedInstanceState: Bundle?
+        inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
     ): View? {
         return inflater.inflate(R.layout.fragment_feed, container, false)
     }
@@ -62,63 +52,111 @@ class FeedFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        // 初始化RecyclerView
-        feedRecyclerView = view.findViewById(R.id.recyclerview_feed)
-        feedRecyclerView.layoutManager = StaggeredGridLayoutManager(
-            2,
-            StaggeredGridLayoutManager.VERTICAL
-        )
-
-        // 获取Activity级别的ViewModel（多个Fragment共享）
+        // 1. 初始化 ViewModel
         homeViewModel = ViewModelProvider(requireActivity())[HomeViewModel::class.java]
 
-        // 初始化Adapter（新版本不需要传入初始数据）
+        // 2. 初始化 SwipeRefreshLayout (下拉刷新)
+        swipeRefreshLayout = view.findViewById(R.id.swipe_refresh)
+        // 设置刷新圆圈的颜色
+        swipeRefreshLayout.setColorSchemeResources(com.google.android.material.R.color.design_default_color_primary)
+
+        swipeRefreshLayout.setOnRefreshListener {
+            // 触发下拉刷新逻辑
+            homeViewModel.refresh(category)
+        }
+
+        // 3. 初始化 RecyclerView
+        feedRecyclerView = view.findViewById(R.id.recyclerview_feed)
+        val layoutManager = StaggeredGridLayoutManager(2, StaggeredGridLayoutManager.VERTICAL)
+        feedRecyclerView.layoutManager = layoutManager
+
         feedAdapter = FeedAdapter(
             onItemClick = { feedItem, sharedCardView, sharedImageView ->
+                // ... (保持原本的跳转逻辑不变) ...
                 val intent = Intent(requireContext(), PostActivity::class.java).apply {
-                    putExtra(com.example.myapp.ui.post.PostActivity.EXTRA_POST_ID, feedItem.id)
-
-                    // 传递两个 TransitionName 到详情页
+                    putExtra(PostActivity.EXTRA_POST_ID, feedItem.id)
                     putExtra("extra_trans_name_image", ViewCompat.getTransitionName(sharedImageView))
                     putExtra("extra_trans_name_card", ViewCompat.getTransitionName(sharedCardView))
                 }
-
-                // [关键修改] 创建包含两个共享元素的动画选项
-                // Pair.create(View, TransitionName)
                 val options = ActivityOptionsCompat.makeSceneTransitionAnimation(
                     requireActivity(),
                     Pair.create(sharedCardView, ViewCompat.getTransitionName(sharedCardView)),
                     Pair.create(sharedImageView, ViewCompat.getTransitionName(sharedImageView))
                 )
-
                 startActivity(intent, options.toBundle())
             },
             onLikeClick = { feedItem ->
-                // --- 修改开始 ---
-                // 调用 ViewModel 的方法，传入帖子 ID
                 homeViewModel.toggleLike(feedItem.id)
-                // --- 修改结束 ---
             }
         )
         feedRecyclerView.adapter = feedAdapter
 
-        // 观察对应类别的数据
+        // 4. [新增] 监听滚动实现“自动加载更多”
+        feedRecyclerView.addOnScrollListener(object : RecyclerView.OnScrollListener() {
+            override fun onScrolled(recyclerView: RecyclerView, dx: Int, dy: Int) {
+                super.onScrolled(recyclerView, dx, dy)
+
+                // 只有向下滑动时才检查 (dy > 0)
+                if (dy > 0) {
+                    val visibleItemCount = layoutManager.childCount
+                    val totalItemCount = layoutManager.itemCount
+                    // StaggeredGrid 需要获取一个数组，因为瀑布流底部可能不平齐
+                    val firstVisibleItems = layoutManager.findFirstVisibleItemPositions(null)
+
+                    if (firstVisibleItems != null && firstVisibleItems.isNotEmpty()) {
+                        val firstVisibleItemPosition = firstVisibleItems[0]
+
+                        // 简单的触发阈值：如果 (可见数量 + 第一个可见的位置) >= 总数量，说明到底了
+                        // 通常预留几个 item (例如 4 个) 提前加载，体验更好
+                        if ((visibleItemCount + firstVisibleItemPosition) >= totalItemCount - 4) {
+                            // 检查 ViewModel 是否正在加载，防止重复触发
+                            if (homeViewModel.isLoading.value == false) {
+                                homeViewModel.loadMore(category)
+                            }
+                        }
+                    }
+                }
+            }
+        })
+
+        // 5. 观察数据
         observeData()
 
-        // 触发加载数据
+        // 初始加载
         homeViewModel.loadDataForTab(category)
     }
 
-    /**
-     * 观察ViewModel中的数据变化
-     */
     private fun observeData() {
+        // 观察 Feed 列表
         homeViewModel.getFeedsByCategory(category).observe(viewLifecycleOwner) { feedList ->
             feedAdapter.updateData(feedList)
-        }
-    }
 
-    override fun onResume() {
-        super.onResume()
+            // 数据回来后，如果列表为空显示空视图，否则显示列表
+            val emptyView = view?.findViewById<View>(R.id.empty_view)
+            if (feedList.isEmpty()) {
+                emptyView?.visibility = View.VISIBLE
+                feedRecyclerView.visibility = View.GONE
+            } else {
+                emptyView?.visibility = View.GONE
+                feedRecyclerView.visibility = View.VISIBLE
+            }
+        }
+
+        // 观察加载状态 -> 控制刷新动画的结束
+        homeViewModel.isLoading.observe(viewLifecycleOwner) { isLoading ->
+            if (!isLoading) {
+                // 如果 loading 结束，收起下拉刷新的圆圈
+                swipeRefreshLayout.isRefreshing = false
+            }
+        }
+
+        // 观察错误信息
+        homeViewModel.error.observe(viewLifecycleOwner) { error ->
+            error?.let {
+                Toast.makeText(context, it, Toast.LENGTH_SHORT).show()
+                swipeRefreshLayout.isRefreshing = false // 出错也要停止动画
+                homeViewModel.clearError()
+            }
+        }
     }
 }

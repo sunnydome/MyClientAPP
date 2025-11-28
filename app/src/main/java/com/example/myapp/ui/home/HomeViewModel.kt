@@ -16,6 +16,7 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
     private val database: AppDatabase = AppDatabase.getInstance(application)
     private val postRepository: PostRepository = PostRepository.getInstance(database)
 
+    private var isLoadingMore = false
     // 当前选中的分类
     private val _currentCategory = MutableLiveData<String>("发现")
     val currentCategory: LiveData<String> = _currentCategory
@@ -85,6 +86,8 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
      * 上拉加载更多
      */
     fun loadMore(category: String) {
+
+
         if (_isLoading.value == true) return
 
         val currentPage = pageCache[category] ?: 1
@@ -97,19 +100,22 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
             val result = postRepository.fetchFeeds(category, page = nextPage)
 
             // _isLoading.value = false
+            val currentPage = pageCache[category] ?: 1
+            val nextPage = currentPage + 1
 
-            result.fold(
-                onSuccess = { hasMore ->
-                    // 加载成功，页码 +1
+            viewModelScope.launch {
+                // 这里可以不设 isLoading = true 以免触发全屏 loading，或者单独搞一个 isLoadingMore 状态
+                // 但为了简单，暂时复用 _isLoading，注意这可能会让下拉刷新头弹一下，通常没问题
+                // _isLoading.value = true
+
+                val result = postRepository.fetchFeeds(category, page = nextPage)
+
+                // _isLoading.value = false
+
+                result.onSuccess {
                     pageCache[category] = nextPage
-                    if (!hasMore) {
-                        // TODO: 标记该分类已无更多数据
-                    }
-                },
-                onFailure = { e ->
-                    _error.value = e.message ?: "加载失败"
                 }
-            )
+            }
         }
     }
 
