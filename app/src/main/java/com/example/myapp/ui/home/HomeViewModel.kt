@@ -1,7 +1,6 @@
 package com.example.myapp.ui.home
 
 import android.app.Application
-import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
@@ -16,64 +15,74 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
     private val database: AppDatabase = AppDatabase.getInstance(application)
     private val postRepository: PostRepository = PostRepository.getInstance(database)
 
-    private var isLoadingMore = false
+    // ... (_currentCategory, feedsCache, pageCache 等保持不变) ...
     // 当前选中的分类
     private val _currentCategory = MutableLiveData<String>("发现")
     val currentCategory: LiveData<String> = _currentCategory
 
-    // 缓存每个分类的 LiveData (从数据库读取)
+    // 缓存每个分类的 LiveData
     private val feedsCache = mutableMapOf<String, LiveData<List<FeedItem>>>()
 
     // 缓存每个分类的当前页码
     private val pageCache = mutableMapOf<String, Int>()
 
-    // 加载状态 (网络请求中)
-    private val _isLoading = MutableLiveData<Boolean>(false)
-    val isLoading: LiveData<Boolean> = _isLoading
+    // 废弃全局 isLoading，改为 Map 存储每个分类的加载状态
+    private val loadingStateCache = mutableMapOf<String, MutableLiveData<Boolean>>()
 
-    // 错误信息
+    // 全局错误信息 (这个可以保留全局，或者也改成 Map，这里暂用全局)
     private val _error = MutableLiveData<String?>()
     val error: LiveData<String?> = _error
 
-    /**
-     * 获取指定类别的 LiveData (UI 观察源)
-     */
+    // 获取指定分类的加载状态 LiveData
+    fun getLoadingState(category: String): LiveData<Boolean> {
+        return loadingStateCache.getOrPut(category) {
+            MutableLiveData(false)
+        }
+    }
+
+    // 辅助方法：设置特定分类的加载状态
+    private fun setLoading(category: String, isLoading: Boolean) {
+        loadingStateCache.getOrPut(category) { MutableLiveData(false) }.value = isLoading
+    }
+
+    // 辅助方法：读取特定分类是否正在加载
+    private fun isLoading(category: String): Boolean {
+        return loadingStateCache[category]?.value == true
+    }
+
+    // 专门用于上拉加载的锁 Map，防止单分类并发
+    private val loadingMoreStateMap = mutableMapOf<String, Boolean>()
+
     fun getFeedsByCategory(category: String): LiveData<List<FeedItem>> {
         return feedsCache.getOrPut(category) {
             postRepository.getFeedsByCategory(category)
         }
     }
 
-    /**
-     * 切换 Tab 时调用，如果从未加载过则触发网络请求
-     */
     fun loadDataForTab(category: String) {
         _currentCategory.value = category
-
-        // 如果该分类从未加载过网络数据 (页码为 null 或 0)，则触发刷新
         if (pageCache[category] == null) {
             refresh(category)
         }
     }
 
     /**
-     * 下拉刷新：重置页码为 1，请求最新数据
+     * 下拉刷新
      */
     fun refresh(category: String) {
-        Log.d("HomeViewModel", "🔄 UI触发刷新: $category")
-        if (_isLoading.value == true || isLoadingMore) return
+        // 只检查【当前分类】是否正在加载
+        if (isLoading(category)) return
+
         viewModelScope.launch {
-            _isLoading.value = true
+            setLoading(category, true) // 开启当前分类的 Loading
             _error.value = null
 
-            // 调用 Repository 从网络拉取第一页，并写入数据库
             val result = postRepository.fetchFeeds(category, page = 1)
 
-            _isLoading.value = false
+            setLoading(category, false) // 关闭当前分类的 Loading
 
             result.fold(
-                onSuccess = { hasMore ->
-                    // 刷新成功，重置页码
+                onSuccess = {
                     pageCache[category] = 1
                 },
                 onFailure = { e ->
@@ -87,54 +96,35 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
      * 上拉加载更多
      */
     fun loadMore(category: String) {
-        // 1. 严格的防抖检查：如果正在加载更多，或者全局正在刷新，直接返回
-        if (isLoadingMore || _isLoading.value == true) {
+        // 检查锁：当前分类正在 Loading 或者正在 LoadingMore
+        if (isLoading(category) || loadingMoreStateMap[category] == true) {
             return
         }
 
-        // 2. 立即上锁！(在协程启动前)
-        isLoadingMore = true
+        loadingMoreStateMap[category] = true // 上锁
 
-        // 这里的页码计算逻辑保持不变
         val currentPage = pageCache[category] ?: 1
         val nextPage = currentPage + 1
 
         viewModelScope.launch {
-            // 注意：这里不需要 _isLoading.value = true，否则下拉刷新的圈圈会弹出来
-
-            // 3. 发起请求
             val result = postRepository.fetchFeeds(category, page = nextPage)
 
-            // 4. 请求结束，解锁
-            isLoadingMore = false
+            loadingMoreStateMap[category] = false // 解锁
 
             result.fold(
                 onSuccess = { hasMore ->
-                    // 成功后更新页码
                     pageCache[category] = nextPage
-                    // TODO: 如果 hasMore 为 false，可以标记该分类已到底，不再触发 loadMore
                 },
                 onFailure = { e ->
-                    // 失败处理：可以通过一个单独的 LiveData 通知 UI 显示 Toast，而不是改变全局 error 状态
-                    // _error.value = "加载更多失败: ${e.message}"
-                    // 暂时只打印日志，不干扰 UI
                     android.util.Log.e("HomeViewModel", "Load more failed", e)
                 }
             )
         }
     }
 
-    /**
-     * 切换点赞状态
-     */
     fun toggleLike(postId: String) {
         viewModelScope.launch {
-            // 调用 Repository，它会负责乐观更新本地 + 发送网络请求
-            val result = postRepository.toggleLike(postId)
-
-            if (result.isFailure) {
-                _error.value = "点赞失败: ${result.exceptionOrNull()?.message}"
-            }
+            postRepository.toggleLike(postId)
         }
     }
 

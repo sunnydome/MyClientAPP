@@ -110,7 +110,7 @@ class FeedFragment : Fragment() {
                         // 通常预留几个 item (例如 4 个) 提前加载，体验更好
                         if ((visibleItemCount + firstVisibleItemPosition) >= totalItemCount - 4) {
                             // 检查 ViewModel 是否正在加载，防止重复触发
-                            if (homeViewModel.isLoading.value == false) {
+                            if (homeViewModel.getLoadingState(category).value == false) {
                                 homeViewModel.loadMore(category)
                             }
                         }
@@ -143,7 +143,7 @@ class FeedFragment : Fragment() {
         }
 
         // 观察加载状态 -> 控制刷新动画的结束
-        homeViewModel.isLoading.observe(viewLifecycleOwner) { isLoading ->
+        homeViewModel.getLoadingState(category).observe(viewLifecycleOwner) { isLoading ->
             if (!isLoading) {
                 // 如果 loading 结束，收起下拉刷新的圆圈
                 swipeRefreshLayout.isRefreshing = false
