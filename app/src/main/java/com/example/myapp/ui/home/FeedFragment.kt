@@ -13,7 +13,7 @@ import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
 import androidx.recyclerview.widget.RecyclerView
 import androidx.recyclerview.widget.StaggeredGridLayoutManager
-import androidx.swiperefreshlayout.widget.SwipeRefreshLayout // [新增导入]
+import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
 import com.example.myapp.R
 import com.example.myapp.ui.home.recyclerPostView.FeedAdapter
 import com.example.myapp.ui.post.PostActivity
@@ -71,16 +71,14 @@ class FeedFragment : Fragment() {
         feedRecyclerView.layoutManager = layoutManager
 
         feedAdapter = FeedAdapter(
-            onItemClick = { feedItem, sharedCardView, sharedImageView ->
+            onItemClick = { feedItem, sharedImageView ->
                 // ... (保持原本的跳转逻辑不变) ...
                 val intent = Intent(requireContext(), PostActivity::class.java).apply {
                     putExtra(PostActivity.EXTRA_POST_ID, feedItem.id)
                     putExtra("extra_trans_name_image", ViewCompat.getTransitionName(sharedImageView))
-                    putExtra("extra_trans_name_card", ViewCompat.getTransitionName(sharedCardView))
                 }
                 val options = ActivityOptionsCompat.makeSceneTransitionAnimation(
                     requireActivity(),
-                    Pair.create(sharedCardView, ViewCompat.getTransitionName(sharedCardView)),
                     Pair.create(sharedImageView, ViewCompat.getTransitionName(sharedImageView))
                 )
                 startActivity(intent, options.toBundle())

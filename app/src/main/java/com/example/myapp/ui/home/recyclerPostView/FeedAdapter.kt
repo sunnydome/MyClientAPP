@@ -25,7 +25,7 @@ import com.example.myapp.ui.post.PostActivity
  * 更新说明：使用新的FeedItem数据模型
  */
 class FeedAdapter(
-    private val onItemClick: ((FeedItem, View, View) -> Unit)? = null,
+    private val onItemClick: ((FeedItem, View) -> Unit)? = null,
     private val onLikeClick: ((FeedItem) -> Unit)? = null
 ) : ListAdapter<FeedItem, FeedAdapter.FeedViewHolder>(FeedDiffCallback()) {
 
@@ -105,13 +105,10 @@ class FeedAdapter(
             val transitionName = "trans_image_${feed.id}"
             ViewCompat.setTransitionName(imageView, transitionName)
 
-            // 2. [新增] 给整个卡片(itemView)设置 transitionName
-            val cardTransitionName = "trans_card_${feed.id}"
-            ViewCompat.setTransitionName(itemView, cardTransitionName)
             // 点击事件 - 跳转到详情页
             itemView.setOnClickListener {
                 if (onItemClick != null) {
-                    onItemClick.invoke(feed, imageView, imageView)
+                    onItemClick.invoke(feed, imageView)
                 } else {
                     // 默认行为：跳转到帖子详情页
                     val context = itemView.context

@@ -4,7 +4,6 @@ import android.os.Bundle
 import android.util.Log
 import android.view.View
 import android.view.inputmethod.EditorInfo
-import android.widget.Button
 import android.widget.EditText
 import android.widget.ImageView
 import android.widget.TextView
@@ -36,7 +35,7 @@ class PostActivity : AppCompatActivity() {
     private lateinit var ivBack: ImageView           // @+id/home_return
     private lateinit var ivAuthorAvatar: ImageView   // @+id/post_user_avatar
     private lateinit var tvAuthorName: TextView      // @+id/post_user_name
-    private lateinit var btnFollow: Button           // @+id/followButton
+    private lateinit var btnFollow: TextView           // @+id/followButton
     private lateinit var ivShare: ImageView          // @+id/share_icon
 
     // 内容区域
@@ -72,7 +71,6 @@ class PostActivity : AppCompatActivity() {
         postViewModel = ViewModelProvider(this)[PostViewModel::class.java]
 
         val imageTransName = intent.getStringExtra("extra_trans_name_image")
-        val cardTransName = intent.getStringExtra("extra_trans_name_card") // [新增]
 
         // [核心修改] 设置进入/返回的共享元素回调
         setEnterSharedElementCallback(object : SharedElementCallback() {
@@ -90,14 +88,14 @@ class PostActivity : AppCompatActivity() {
             }
         })
         supportPostponeEnterTransition()
-        initViews(imageTransName, cardTransName)
+        initViews(imageTransName)
         setupListeners()
         observeViewModel()
 
         postViewModel.loadPost(postId)
     }
 
-    private fun initViews(imageTransName: String?, cardTransName: String?) {
+    private fun initViews(imageTransName: String?) {
         // 1. 顶部栏
         ivBack = findViewById(R.id.home_return)
         ivAuthorAvatar = findViewById(R.id.post_user_avatar)
@@ -105,12 +103,6 @@ class PostActivity : AppCompatActivity() {
         btnFollow = findViewById(R.id.followButton)
         ivShare = findViewById(R.id.share_icon)
 
-        // 1. [新增] 设置根布局的 TransitionName
-        // 你的根布局 ID 是 main (CoordinatorLayout)
-        val rootView = findViewById<android.view.View>(R.id.main)
-        if (cardTransName != null) {
-            androidx.core.view.ViewCompat.setTransitionName(rootView, cardTransName)
-        }
         // 2. 中间内容
         viewPager2 = findViewById(R.id.view_pager)
         // 确保你的 PagerViewAdapter 已经改为支持 List<String>
