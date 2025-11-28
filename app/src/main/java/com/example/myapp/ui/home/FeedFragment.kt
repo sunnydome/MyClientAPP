@@ -88,8 +88,18 @@ class FeedFragment : Fragment() {
             }
         )
         feedRecyclerView.adapter = feedAdapter
+        // 监听数据插入，自动滚动到顶部
+        feedAdapter.registerAdapterDataObserver(object : RecyclerView.AdapterDataObserver() {
+            override fun onItemRangeInserted(positionStart: Int, itemCount: Int) {
+                // 如果是在第一个位置插入了数据（发布新帖或下拉刷新）
+                if (positionStart == 0) {
+                    // 强制滚动到顶部，让新帖子立即可见
+                    feedRecyclerView.scrollToPosition(0)
+                }
+            }
+        })
 
-        // 4. [新增] 监听滚动实现“自动加载更多”
+        // 监听滚动实现“自动加载更多”
         feedRecyclerView.addOnScrollListener(object : RecyclerView.OnScrollListener() {
             override fun onScrolled(recyclerView: RecyclerView, dx: Int, dy: Int) {
                 super.onScrolled(recyclerView, dx, dy)
