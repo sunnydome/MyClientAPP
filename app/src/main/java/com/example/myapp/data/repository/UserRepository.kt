@@ -1,5 +1,6 @@
 package com.example.myapp.data.repository
 
+import android.util.Log
 import androidx.lifecycle.LiveData
 import com.example.myapp.data.database.AppDatabase
 import com.example.myapp.data.model.User
@@ -20,7 +21,7 @@ class UserRepository(private val database: AppDatabase) {
      * 注意：如果还没登录，这个可能为空或需要处理
      */
     fun getCurrentUserId(): String {
-        return currentUserId ?: "user_1" // 临时回退：如果没有ID，默认使用 Mock 的 user_1，防止崩溃
+        return currentUserId ?: "u_8888" // 默认ID，对应 Apifox 里的 ID
     }
 
     /**
@@ -33,10 +34,17 @@ class UserRepository(private val database: AppDatabase) {
     }
 
     /**
-     * 同步获取当前用户信息
+     * 获取当前用户信息 (同步)
      */
     suspend fun getCurrentUserSync(): User? {
-        return userDao.getUserByIdSync(getCurrentUserId())
+        // 先尝试从内存/配置获取ID，再去数据库查
+        val userId = currentUserId
+        if (userId != null) {
+            return userDao.getUserByIdSync(userId)
+        }
+        // 如果内存没ID，尝试查数据库里的第一条用户（针对单用户模式）
+        // 或者直接返回 null，触发 refreshCurrentUser
+        return null
     }
 
     /**
@@ -45,15 +53,18 @@ class UserRepository(private val database: AppDatabase) {
     suspend fun refreshCurrentUser(): Result<User> {
         return withContext(Dispatchers.IO) {
             try {
+                // 请求 Apifox 的 /users/me 接口
+
                 val response = userApi.getMe()
+
                 if (response.isSuccess() && response.data != null) {
                     val user = response.data
-
-                    // 更新内存中的 ID
+                    // 1. 更新内存ID
                     currentUserId = user.id
 
-                    // 存入数据库
+                    // 2. 存入数据库 (这样下次 getCurrentUserSync 就能拿到了)
                     userDao.insert(user)
+
                     Result.success(user)
                 } else {
                     Result.failure(Exception(response.message))
@@ -85,7 +96,6 @@ class UserRepository(private val database: AppDatabase) {
         }
     }
 
-    // ... 单例模式代码保持不变 ...
     companion object {
         @Volatile
         private var INSTANCE: UserRepository? = null

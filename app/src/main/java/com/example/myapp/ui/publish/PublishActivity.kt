@@ -5,6 +5,7 @@ import android.os.Build
 import android.os.Bundle
 import android.text.Editable
 import android.text.TextWatcher
+import android.util.Log
 import android.view.View
 import android.widget.EditText
 import android.widget.TextView
@@ -196,13 +197,11 @@ class PublishActivity : FragmentActivity() {
         // 观察发布事件
         viewModel.publishEvent.observe(this) { post ->
             post?.let {
-                // TODO: 实现实际的发布逻辑
-                // 这里只是示例，实际应该调用网络请求上传数据
-                Toast.makeText(this, "发布功能待实现", Toast.LENGTH_SHORT).show()
+                // 修改提示语
+                Toast.makeText(this, "发布成功", Toast.LENGTH_SHORT).show()
 
                 // 发布成功后关闭页面
-                // finish()
-
+                finish()
                 viewModel.publishEventHandled()
             }
         }
