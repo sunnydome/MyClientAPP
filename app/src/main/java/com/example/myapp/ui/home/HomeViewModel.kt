@@ -61,6 +61,7 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
      */
     fun refresh(category: String) {
         Log.d("HomeViewModel", "🔄 UI触发刷新: $category")
+        if (_isLoading.value == true || isLoadingMore) return
         viewModelScope.launch {
             _isLoading.value = true
             _error.value = null
@@ -86,36 +87,40 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
      * 上拉加载更多
      */
     fun loadMore(category: String) {
+        // 1. 严格的防抖检查：如果正在加载更多，或者全局正在刷新，直接返回
+        if (isLoadingMore || _isLoading.value == true) {
+            return
+        }
 
+        // 2. 立即上锁！(在协程启动前)
+        isLoadingMore = true
 
-        if (_isLoading.value == true) return
-
+        // 这里的页码计算逻辑保持不变
         val currentPage = pageCache[category] ?: 1
         val nextPage = currentPage + 1
 
         viewModelScope.launch {
-            // 注意：加载更多时不一定非要显示全屏 Loading，可以是底部 Loading 条，这里简化处理
-            // _isLoading.value = true
+            // 注意：这里不需要 _isLoading.value = true，否则下拉刷新的圈圈会弹出来
 
+            // 3. 发起请求
             val result = postRepository.fetchFeeds(category, page = nextPage)
 
-            // _isLoading.value = false
-            val currentPage = pageCache[category] ?: 1
-            val nextPage = currentPage + 1
+            // 4. 请求结束，解锁
+            isLoadingMore = false
 
-            viewModelScope.launch {
-                // 这里可以不设 isLoading = true 以免触发全屏 loading，或者单独搞一个 isLoadingMore 状态
-                // 但为了简单，暂时复用 _isLoading，注意这可能会让下拉刷新头弹一下，通常没问题
-                // _isLoading.value = true
-
-                val result = postRepository.fetchFeeds(category, page = nextPage)
-
-                // _isLoading.value = false
-
-                result.onSuccess {
+            result.fold(
+                onSuccess = { hasMore ->
+                    // 成功后更新页码
                     pageCache[category] = nextPage
+                    // TODO: 如果 hasMore 为 false，可以标记该分类已到底，不再触发 loadMore
+                },
+                onFailure = { e ->
+                    // 失败处理：可以通过一个单独的 LiveData 通知 UI 显示 Toast，而不是改变全局 error 状态
+                    // _error.value = "加载更多失败: ${e.message}"
+                    // 暂时只打印日志，不干扰 UI
+                    android.util.Log.e("HomeViewModel", "Load more failed", e)
                 }
-            }
+            )
         }
     }
 
