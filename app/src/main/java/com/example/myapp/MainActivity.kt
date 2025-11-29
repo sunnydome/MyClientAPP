@@ -2,151 +2,111 @@ package com.example.myapp
 
 import android.app.ActivityOptions
 import android.content.Intent
+import android.graphics.Typeface
 import android.os.Bundle
+import android.widget.TextView
 import androidx.activity.OnBackPressedCallback
-import androidx.fragment.app.FragmentActivity
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.FragmentActivity
 import com.example.myapp.ui.home.HomeFragment
 import com.example.myapp.ui.market.MarketFragment
 import com.example.myapp.ui.message.MessageFragment
 import com.example.myapp.ui.profile.ProfileFragment
 import com.example.myapp.ui.publish.PublishActivity
-import com.google.android.material.bottomnavigation.BottomNavigationView
-import com.google.android.material.floatingactionbutton.FloatingActionButton
 
 /**
- * 主Activity - 应用容器
- * 管理底部导航和顶级Fragment
+ * 主Activity - 仿小红书纯文字底部导航
  */
 class MainActivity : FragmentActivity() {
 
-    private lateinit var bottomNavigationView: BottomNavigationView
+    private lateinit var navHome: TextView
+    private lateinit var navMarket: TextView
+    private lateinit var navMessage: TextView
+    private lateinit var navProfile: TextView
 
-    private lateinit var fab : FloatingActionButton
-
-    // 缓存Fragment实例，避免重复创建
+    private lateinit var navItems: List<TextView>
     private val fragmentMap = mutableMapOf<Int, Fragment>()
-
-    // 当前显示的Fragment的ID
-    private var currentFragmentId = R.id.nav_home
+    private var currentNavId = R.id.nav_home
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        // 恢复状态
         savedInstanceState?.let {
-            currentFragmentId = it.getInt(KEY_CURRENT_FRAGMENT, R.id.nav_home)
+            currentNavId = it.getInt(KEY_CURRENT_NAV, R.id.nav_home)
         }
 
-        // 初始化底部导航
-        initBottomNavigation()
+        initViews()
+        setupBackPressed()
 
-        // 设置返回键处理
-        setupBackPressedHandler()
-
-        // 如果是首次创建，显示首页
         if (savedInstanceState == null) {
-            showFragment(R.id.nav_home)
+            selectNav(R.id.nav_home)
         } else {
-            // 恢复之前显示的Fragment（此时Fragment已经通过FragmentManager自动恢复）
-            // 只需要确保正确的Fragment是可见的
-            showFragment(currentFragmentId)
+            selectNav(currentNavId)
         }
     }
 
-    /**
-     * 初始化底部导航栏
-     */
-    private fun initBottomNavigation() {
-        bottomNavigationView = findViewById(R.id.bottom_navigation)
-        fab = findViewById(R.id.fab_publish)
-        // 设置导航项选中监听
-        bottomNavigationView.setOnItemSelectedListener { item ->
-            when (item.itemId) {
-                R.id.nav_home -> {
-                    showFragment(R.id.nav_home)
-                    true
-                }
-                R.id.nav_market -> {
-                    showFragment(R.id.nav_market)
-                    true
-                }
-                R.id.nav_message -> {
-                    showFragment(R.id.nav_message)
-                    true
-                }
-                R.id.nav_profile -> {
-                    showFragment(R.id.nav_profile)
-                    true
-                }
-                else -> false
-            }
-        }
-        fab.setOnClickListener{
+    private fun initViews() {
+        navHome = findViewById(R.id.nav_home)
+        navMarket = findViewById(R.id.nav_market)
+        navMessage = findViewById(R.id.nav_message)
+        navProfile = findViewById(R.id.nav_profile)
+
+        navItems = listOf(navHome, navMarket, navMessage, navProfile)
+
+        // 设置点击监听
+        navHome.setOnClickListener { selectNav(R.id.nav_home) }
+        navMarket.setOnClickListener { selectNav(R.id.nav_market) }
+        navMessage.setOnClickListener { selectNav(R.id.nav_message) }
+        navProfile.setOnClickListener { selectNav(R.id.nav_profile) }
+
+        // 发布按钮
+        findViewById<android.view.View>(R.id.fab_publish).setOnClickListener {
             startPublishActivity()
         }
-        // 设置默认选中项
-        bottomNavigationView.selectedItemId = currentFragmentId
     }
 
-    /**
-     * 设置返回键处理（使用新的OnBackPressedDispatcher）
-     */
-    private fun setupBackPressedHandler() {
-        onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
-            override fun handleOnBackPressed() {
-                // 如果不在首页，返回首页
-                if (currentFragmentId != R.id.nav_home) {
-                    bottomNavigationView.selectedItemId = R.id.nav_home
-                } else {
-                    // 在首页，退出应用
-                    isEnabled = false // 禁用此回调
-                    onBackPressedDispatcher.onBackPressed() // 调用系统默认行为
-                }
-            }
-        })
-    }
+    private fun selectNav(navId: Int) {
+        // 更新所有导航项样式
+        navItems.forEach { textView ->
+            val isSelected = textView.id == navId
+            textView.isSelected = isSelected
 
-    /**
-     * 显示指定的Fragment（使用 show/hide 方式）
-     * @param itemId 底部导航项ID
-     */
-    private fun showFragment(itemId: Int) {
-        val targetFragment = getOrCreateFragment(itemId)
-        val fragmentManager = supportFragmentManager
-        val transaction = fragmentManager.beginTransaction()
-
-        // 隐藏当前所有Fragment
-        fragmentMap.values.forEach { fragment ->
-            if (fragment.isAdded) {
-                transaction.hide(fragment)
+            // 选中时加粗，未选中时正常
+            textView.typeface = if (isSelected) {
+                Typeface.DEFAULT_BOLD
+            } else {
+                Typeface.DEFAULT
             }
         }
 
-        // 显示或添加目标Fragment
-        if (targetFragment.isAdded) {
-            // Fragment已添加，直接显示
-            transaction.show(targetFragment)
+        // 切换Fragment
+        showFragment(navId)
+        currentNavId = navId
+    }
+
+    private fun showFragment(navId: Int) {
+        val fragment = getOrCreateFragment(navId)
+        val transaction = supportFragmentManager.beginTransaction()
+
+        // 隐藏所有
+        fragmentMap.values.forEach {
+            if (it.isAdded) transaction.hide(it)
+        }
+
+        // 显示目标
+        if (fragment.isAdded) {
+            transaction.show(fragment)
         } else {
-            // Fragment未添加，先添加再显示
-            transaction.add(R.id.fragment_container, targetFragment)
+            transaction.add(R.id.fragment_container, fragment)
         }
 
-        // 使用commitNow确保立即执行，避免状态不一致
         transaction.commitNowAllowingStateLoss()
-
-        currentFragmentId = itemId
     }
 
-    /**
-     * 获取或创建Fragment
-     * @param itemId 底部导航项ID
-     * @return 对应的Fragment实例
-     */
-    private fun getOrCreateFragment(itemId: Int): Fragment {
-        return fragmentMap.getOrPut(itemId) {
-            when (itemId) {
+    private fun getOrCreateFragment(navId: Int): Fragment {
+        return fragmentMap.getOrPut(navId) {
+            when (navId) {
                 R.id.nav_home -> HomeFragment()
                 R.id.nav_market -> MarketFragment()
                 R.id.nav_message -> MessageFragment()
@@ -156,28 +116,33 @@ class MainActivity : FragmentActivity() {
         }
     }
 
-    /**
-     * 启动发布Activity
-     */
+    private fun setupBackPressed() {
+        onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
+            override fun handleOnBackPressed() {
+                if (currentNavId != R.id.nav_home) {
+                    selectNav(R.id.nav_home)
+                } else {
+                    isEnabled = false
+                    onBackPressedDispatcher.onBackPressed()
+                }
+            }
+        })
+    }
+
     private fun startPublishActivity() {
         val intent = Intent(this, PublishActivity::class.java)
-
-        // 使用 ActivityOptions 设置转场动画
-        val options = ActivityOptions.makeCustomAnimation(this, R.anim.slide_up_in, R.anim.no_animation)
-
-        // 启动 Activity 并应用转场动画
+        val options = ActivityOptions.makeCustomAnimation(
+            this, R.anim.slide_up_in, R.anim.no_animation
+        )
         startActivity(intent, options.toBundle())
     }
 
-    /**
-     * 保存状态
-     */
     override fun onSaveInstanceState(outState: Bundle) {
         super.onSaveInstanceState(outState)
-        outState.putInt(KEY_CURRENT_FRAGMENT, currentFragmentId)
+        outState.putInt(KEY_CURRENT_NAV, currentNavId)
     }
 
     companion object {
-        private const val KEY_CURRENT_FRAGMENT = "current_fragment"
+        private const val KEY_CURRENT_NAV = "current_nav"
     }
 }

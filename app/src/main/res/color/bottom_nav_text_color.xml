@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- 选中状态 - 黑色加粗效果通过代码设置 -->
+    <item android:state_selected="true" android:color="#1A1A1A" />
+    <!-- 默认状态 - 灰色 -->
+    <item android:color="#999999" />
+</selector>

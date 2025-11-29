@@ -13,6 +13,7 @@ import com.example.myapp.data.repository.UserRepository
  */
 class MyApplication : Application() {
 
+
     // 懒加载数据库实例
     val database: AppDatabase by lazy {
         AppDatabase.getInstance(this)
@@ -45,7 +46,6 @@ class MyApplication : Application() {
             database.openHelper.writableDatabase
         }.start()
     }
-
     companion object {
         @Volatile
         private var instance: MyApplication? = null

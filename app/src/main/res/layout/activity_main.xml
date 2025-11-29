@@ -1,56 +1,110 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- 优化点1: 移除根布局背景，让Fragment自己绘制背景 -->
-<androidx.coordinatorlayout.widget.CoordinatorLayout
+<!--
+仿小红书底部导航：
+1. 只有文字，没有图标
+2. 中间是彩色圆形发布按钮
+3. 完全扁平，无阴影
+-->
+<androidx.constraintlayout.widget.ConstraintLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
-    <!-- 移除 android:background="#F5F5F5" -->
+    android:layout_height="match_parent"
+    android:background="@color/white">
 
-    <!-- 优化点2: 使用 FragmentContainerView 替代 FrameLayout -->
-    <!-- FragmentContainerView 专为Fragment设计，性能更好 -->
     <androidx.fragment.app.FragmentContainerView
         android:id="@+id/fragment_container"
         android:layout_width="match_parent"
-        android:layout_height="match_parent" />
+        android:layout_height="0dp"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toTopOf="@id/bottom_nav_container" />
 
-    <com.google.android.material.bottomappbar.BottomAppBar
-        android:id="@+id/bottom_app_bar"
+    <!-- 顶部分割线 -->
+    <View
+        android:id="@+id/nav_divider"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_gravity="bottom"
-        android:backgroundTint="@color/white"
-        app:fabCradleRoundedCornerRadius="20dp"
-        app:fabCradleMargin="0dp"
-        app:fabAlignmentMode="center"
-        app:fabCradleVerticalOffset="0dp">
+        android:layout_height="0.5dp"
+        android:background="#F0F0F0"
+        app:layout_constraintBottom_toTopOf="@id/bottom_nav_container" />
 
-        <com.google.android.material.bottomnavigation.BottomNavigationView
-            android:id="@+id/bottom_navigation"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginEnd="12dp"
-            android:layout_marginStart="12dp"
-            android:background="@android:color/transparent"
-            app:elevation="0dp"
-            app:labelVisibilityMode="labeled"
-            app:menu="@menu/bottom_navigation_menu"
-            app:itemIconTint="@color/bottom_nav_item_color"
-            app:itemTextColor="@color/bottom_nav_item_color"/>
+    <!-- 底部导航 - 纯文字版 -->
+    <LinearLayout
+        android:id="@+id/bottom_nav_container"
+        android:layout_width="match_parent"
+        android:layout_height="50dp"
+        android:orientation="horizontal"
+        android:background="@color/white"
+        android:gravity="center_vertical"
+        app:layout_constraintBottom_toBottomOf="parent">
 
-    </com.google.android.material.bottomappbar.BottomAppBar>
+        <!-- 首页 -->
+        <TextView
+            android:id="@+id/nav_home"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:gravity="center"
+            android:text="首页"
+            android:textSize="15sp"
+            android:textColor="@color/bottom_nav_text_color"
+            android:background="?attr/selectableItemBackgroundBorderless" />
 
-    <com.google.android.material.floatingactionbutton.FloatingActionButton
-        android:id="@+id/fab_publish"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:contentDescription="@string/nav_publish"
-        android:src="@drawable/ic_add_circle"
-        app:backgroundTint="@color/white"
-        app:layout_anchor="@+id/bottom_app_bar"
-        app:layout_anchorGravity="center"
-        app:tint="@null"
-        app:elevation="2dp"
-        app:pressedTranslationZ="0dp" />
+        <!-- 集市 -->
+        <TextView
+            android:id="@+id/nav_market"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:gravity="center"
+            android:text="集市"
+            android:textSize="15sp"
+            android:textColor="@color/bottom_nav_text_color"
+            android:background="?attr/selectableItemBackgroundBorderless" />
 
-</androidx.coordinatorlayout.widget.CoordinatorLayout>
+        <!-- 中间发布按钮 -->
+        <FrameLayout
+            android:id="@+id/fab_publish"
+            android:layout_width="44dp"
+            android:layout_height="44dp"
+            android:layout_marginHorizontal="16dp"
+            android:background="@drawable/bg_publish_button"
+            android:clickable="true"
+            android:focusable="true"
+            android:foreground="?attr/selectableItemBackgroundBorderless">
+
+            <ImageView
+                android:layout_width="20dp"
+                android:layout_height="20dp"
+                android:layout_gravity="center"
+                android:src="@drawable/ic_add"
+                app:tint="@color/white" />
+
+        </FrameLayout>
+
+        <!-- 消息 -->
+        <TextView
+            android:id="@+id/nav_message"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:gravity="center"
+            android:text="消息"
+            android:textSize="15sp"
+            android:textColor="@color/bottom_nav_text_color"
+            android:background="?attr/selectableItemBackgroundBorderless" />
+
+        <!-- 我 -->
+        <TextView
+            android:id="@+id/nav_profile"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:gravity="center"
+            android:text="我"
+            android:textSize="15sp"
+            android:textColor="@color/bottom_nav_text_color"
+            android:background="?attr/selectableItemBackgroundBorderless" />
+
+    </LinearLayout>
+
+</androidx.constraintlayout.widget.ConstraintLayout>
