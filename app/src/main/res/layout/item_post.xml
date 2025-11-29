@@ -1,17 +1,31 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.cardview.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
+<!-- 优化点1: 使用 MaterialCardView，性能更好 -->
+<!-- 优化点2: 降低或移除 cardElevation，减少阴影绘制开销 -->
+<!-- 优化点3: 设置 cardUseCompatPadding="false"，手动控制margin -->
+<com.google.android.material.card.MaterialCardView
+    xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    app:cardCornerRadius="4dp"
-    app:cardElevation="2dp"
-    app:cardUseCompatPadding="true">
+    android:layout_margin="4dp"
+    app:cardCornerRadius="8dp"
+    app:cardElevation="0dp"
+    app:strokeWidth="0.5dp"
+    app:strokeColor="#E8E8E8"
+    app:cardBackgroundColor="@color/white">
+    <!--
+    优化说明:
+    - cardElevation="0dp": 移除阴影，用描边代替，大幅减少绘制
+    - strokeWidth + strokeColor: 用描边实现视觉分隔
+    - 如果必须要阴影，最多设置 cardElevation="1dp"
+    -->
 
     <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content">
 
+        <!-- 优化点: 图片不需要背景色，加载时用placeholder -->
         <ImageView
             android:id="@+id/item_image"
             android:layout_width="0dp"
@@ -20,77 +34,79 @@
             app:layout_constraintDimensionRatio="1:1"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent" />
+            app:layout_constraintTop_toTopOf="parent"
+            tools:src="@drawable/ic_launcher_foreground" />
 
         <TextView
             android:id="@+id/item_title"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_marginHorizontal="8dp"
-            android:layout_marginTop="6dp"
+            android:layout_marginTop="8dp"
             android:ellipsize="end"
             android:maxLines="2"
-            android:text="这里是帖子描述，这里展示作品标题内容"
-            android:textColor="#000000"
+            android:textColor="#1A1A1A"
             android:textSize="14sp"
+            android:lineSpacingExtra="2dp"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/item_image" />
+            app:layout_constraintTop_toBottomOf="@+id/item_image"
+            tools:text="这里是帖子描述，这里展示作品标题内容" />
 
-        <ImageView
+        <!-- 优化点: 头像使用 ShapeableImageView 代替 ImageView + background -->
+        <com.google.android.material.imageview.ShapeableImageView
             android:id="@+id/item_user_avatar"
-            android:layout_width="24dp"
-            android:layout_height="24dp"
+            android:layout_width="20dp"
+            android:layout_height="20dp"
             android:layout_marginStart="8dp"
             android:layout_marginTop="8dp"
-            android:layout_marginBottom="8dp"
-            android:background="@drawable/user_avatar_bg"
-            android:padding="2dp"
+            android:layout_marginBottom="10dp"
             android:scaleType="centerCrop"
-            android:src="@drawable/ic_launcher_foreground"
+            app:shapeAppearanceOverlay="@style/CircleImageStyle"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/item_title" />
+            app:layout_constraintTop_toBottomOf="@+id/item_title"
+            tools:src="@drawable/ic_launcher_foreground" />
 
         <TextView
             android:id="@+id/item_user_name"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_marginStart="6dp"
-            android:layout_marginEnd="8dp"
+            android:layout_marginStart="4dp"
+            android:layout_marginEnd="4dp"
             android:ellipsize="end"
             android:maxLines="1"
-            android:text="用户名"
-            android:textColor="#666666"
-            android:textSize="12sp"
+            android:textColor="#999999"
+            android:textSize="11sp"
             app:layout_constraintBottom_toBottomOf="@+id/item_user_avatar"
             app:layout_constraintEnd_toStartOf="@+id/item_like_button"
             app:layout_constraintStart_toEndOf="@+id/item_user_avatar"
-            app:layout_constraintTop_toTopOf="@+id/item_user_avatar" />
+            app:layout_constraintTop_toTopOf="@+id/item_user_avatar"
+            tools:text="用户名" />
 
         <ImageView
             android:id="@+id/item_like_button"
-            android:layout_width="20dp"
-            android:layout_height="20dp"
-            android:layout_marginEnd="4dp"
+            android:layout_width="16dp"
+            android:layout_height="16dp"
+            android:layout_marginEnd="2dp"
             android:src="@drawable/ic_like_selector"
             app:layout_constraintBottom_toBottomOf="@+id/item_user_name"
             app:layout_constraintEnd_toStartOf="@+id/item_like_count"
             app:layout_constraintTop_toTopOf="@+id/item_user_name"
-            tools:srcCompat="@drawable/ic_like_border" />
+            tools:src="@drawable/ic_like_border" />
 
         <TextView
             android:id="@+id/item_like_count"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginEnd="8dp"
-            android:text="1.2w"
-            android:textColor="#666666"
-            android:textSize="12sp"
+            android:textColor="#999999"
+            android:textSize="11sp"
             app:layout_constraintBottom_toBottomOf="@+id/item_like_button"
             app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintTop_toTopOf="@+id/item_like_button" />
+            app:layout_constraintTop_toTopOf="@+id/item_like_button"
+            tools:text="1.2w" />
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 
-</androidx.cardview.widget.CardView>
+</com.google.android.material.card.MaterialCardView>

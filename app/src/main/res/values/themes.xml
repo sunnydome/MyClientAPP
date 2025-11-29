@@ -27,9 +27,21 @@
         <!-- 状态栏文字变黑 (Android 6.0+) -->
         <item name="android:windowLightStatusBar" tools:targetApi="m">true</item>
 
+        <!-- 优化：为Activity设置透明Window背景，避免双重绘制 -->
+        <!-- 设置窗口背景为null或与内容一致的颜色 -->
+        <item name="android:windowBackground">@color/white</item>
+        <!-- 禁用窗口动画预览时的背景 -->
+        <item name="android:windowDisablePreview">false</item>
+        <!-- 关闭窗口内容叠加层 -->
+        <item name="android:windowContentOverlay">@null</item>
         <!-- ================= 其他 Material 组件设置 ================= -->
         <!-- 这一行解决某些组件 crash 问题，非必须但推荐 -->
         <!-- <item name="bottomAppBarStyle">@style/Widget.MaterialComponents.BottomAppBar.Colored</item> -->
+    </style>
+    <!-- 圆形头像样式 -->
+    <style name="CircleImageStyle">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSize">50%</item>
     </style>
 
 </resources>
