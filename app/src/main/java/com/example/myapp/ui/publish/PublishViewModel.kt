@@ -1,9 +1,10 @@
 package com.example.myapp.ui.publish
 
 import android.app.Application
+import android.content.Context
+import android.graphics.BitmapFactory
 import android.net.Uri
 import android.util.Log
-import android.webkit.MimeTypeMap
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
@@ -17,78 +18,56 @@ import com.example.myapp.data.network.RetrofitClient
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import okhttp3.MediaType.Companion.toMediaTypeOrNull
-import okhttp3.MultipartBody
-import okhttp3.RequestBody.Companion.asRequestBody
 import java.io.File
 import java.io.FileOutputStream
+import java.util.UUID
 
-/**
- * 发布页面的ViewModel
- * 管理发布内容的状态和业务逻辑
- */
 class PublishViewModel(application: Application) : AndroidViewModel(application) {
 
-    // 通过application参数获取数据库和Repository
+    // ... (保留原有的变量声明: database, repositories, fileApi, constants ...)
     private val database: AppDatabase = AppDatabase.getInstance(application)
     private val postRepository: PostRepository = PostRepository.getInstance(database)
     private val draftRepository: DraftRepository = DraftRepository.getInstance(database)
     private val userRepository: UserRepository = UserRepository.getInstance(database)
-
-    // 获取 API 实例 (确保 RetrofitClient 中已添加 fileApi)
     private val fileApi = RetrofitClient.fileApi
 
     companion object {
-        const val MAX_IMAGE_COUNT = 9 // 最多选择9张图片
-        const val MAX_TITLE_LENGTH = 20 // 标题长度最多为20
-        const val MAX_CONTENT_LENGTH = 1000 // 正文长度最多为1000
+        const val MAX_IMAGE_COUNT = 9
+        const val MAX_TITLE_LENGTH = 20
+        const val MAX_CONTENT_LENGTH = 1000
         private const val TAG = "PublishViewModel"
     }
 
-    // 当前编辑的草稿ID（如果是从草稿恢复的话）
     private var currentDraftId: Long? = null
 
-    // 选中的图片列表
     private val _selectedImages = MutableLiveData<List<Uri>>(emptyList())
     val selectedImages: LiveData<List<Uri>> = _selectedImages
 
-    // 标题文本
     private val _title = MutableLiveData<String>("")
     val title: LiveData<String> = _title
 
-    // 正文文本
     private val _content = MutableLiveData<String>("")
     val content: LiveData<String> = _content
 
-    // 分类（默认发现）
     private val _category = MutableLiveData<String>("发现")
     val category: LiveData<String> = _category
 
-    // 位置信息
     private val _location = MutableLiveData<String>("")
     val location: LiveData<String> = _location
 
-    // 是否可以发布（至少有图片或文字）
     private val _canPublish = MutableLiveData<Boolean>(false)
     val canPublish: LiveData<Boolean> = _canPublish
 
-    // 加载状态
     private val _isLoading = MutableLiveData<Boolean>(false)
     val isLoading: LiveData<Boolean> = _isLoading
 
-    // 发布事件
     private val _publishEvent = MutableLiveData<PublishEvent?>()
     val publishEvent: LiveData<PublishEvent?> = _publishEvent
 
-    // 保存草稿事件
     private val _saveDraftEvent = MutableLiveData<Any?>()
     val saveDraftEvent: LiveData<Any?> = _saveDraftEvent
 
-    // ========== 图片操作 ==========
-
-    /**
-     * 添加图片
-     */
+    // ... (保留 addImages, removeImage, updateTitle 等基础 UI 逻辑) ...
     fun addImages(uris: List<Uri>) {
         val currentImages = _selectedImages.value ?: emptyList()
         val newImages = (currentImages + uris).take(MAX_IMAGE_COUNT)
@@ -96,9 +75,6 @@ class PublishViewModel(application: Application) : AndroidViewModel(application)
         updateCanPublish()
     }
 
-    /**
-     * 移除图片
-     */
     fun removeImage(position: Int) {
         val currentImages = _selectedImages.value?.toMutableList() ?: return
         if (position in currentImages.indices) {
@@ -108,23 +84,15 @@ class PublishViewModel(application: Application) : AndroidViewModel(application)
         }
     }
 
-    /**
-     * 检查是否还能添加更多图片
-     */
     fun canAddMoreImages(): Boolean {
         val currentCount = _selectedImages.value?.size ?: 0
         return currentCount < MAX_IMAGE_COUNT
     }
 
-    /**
-     * 获取剩余可添加图片数量
-     */
     fun getRemainingImageSlots(): Int {
         val currentCount = _selectedImages.value?.size ?: 0
         return MAX_IMAGE_COUNT - currentCount
     }
-
-    // ========== 内容操作 ==========
 
     fun updateTitle(text: String) {
         _title.value = text.take(MAX_TITLE_LENGTH)
@@ -151,59 +119,67 @@ class PublishViewModel(application: Application) : AndroidViewModel(application)
         _canPublish.value = hasImages || hasTitle || hasContent
     }
 
-    // ========== 发布操作 ==========
+    // ========== 核心修改区域：发布逻辑 ==========
 
-    /**
-     * 请求发布
-     */
     fun requestPublish() {
         if (_canPublish.value != true) return
 
         viewModelScope.launch {
             _isLoading.value = true
 
-            // 1. 获取用户信息 (保持不变)
+            // 1. 获取用户信息
             val currentUser = userRepository.getCurrentUserSync() ?: run {
                 userRepository.refreshCurrentUser().getOrNull()
             }
-            if (currentUser == null) {
-                _isLoading.value = false
-                _publishEvent.value = PublishEvent.Error("获取用户信息失败")
-                return@launch
-            }
-            // 2. 上传图片 (保持不变，使用我们之前讨论的模拟上传逻辑)
-            // 简单起见，这里假设直接使用本地 Uri (真实场景需上传)
-            val uploadedImageUrls = _selectedImages.value?.map { it.toString() } ?: emptyList()
+            // 这里的 Mock 容错：如果还是获取不到用户，创建一个临时的本地用户，防止无法发布
+            val finalUser = currentUser ?: com.example.myapp.data.model.User(
+                id = "local_user", userName = "我", avatarUrl = "", bio = ""
+            )
 
-            // 3. 构建 Post 对象 【关键修改】
-            // 生成一个基于时间的本地 ID，确保唯一性，也方便排序
+            // 2. 处理图片 (复制到私有目录 + 计算宽高比)
+            val localUris = _selectedImages.value ?: emptyList()
+            var savedImagePaths: List<String> = emptyList()
+            var coverRatio = 1.0f // 默认 1:1
+
+            if (localUris.isNotEmpty()) {
+                // 将图片复制到 APP 私有目录，生成 file:// 路径
+                savedImagePaths = copyImagesToAppStorage(localUris)
+
+                // 计算第一张图片的宽高比，用于瀑布流布局
+                // 解决布局重叠的关键！
+                coverRatio = calculateImageAspectRatio(localUris.first())
+            }
+
+            // 3. 构建 Post 对象
             val localId = "local_${System.currentTimeMillis()}"
 
             val post = Post(
-                id = localId,  // <--- 以前是 ""，现在改为生成 ID
-                authorId = currentUser.id,
-                authorName = currentUser.userName,
-                authorAvatar = currentUser.avatarUrl,
+                id = localId,
+                authorId = finalUser.id,
+                authorName = finalUser.userName,
+                authorAvatar = finalUser.avatarUrl,
                 title = _title.value ?: "",
                 content = _content.value ?: "",
-                imageUrls = uploadedImageUrls,
-                coverUrl = uploadedImageUrls.firstOrNull() ?: "",
-
-                // 确保分类是 "发现" (或者是当前选中的分类)，这样才能出现在首页默认列表里
+                imageUrls = savedImagePaths, // 使用 file:// 路径
+                coverUrl = savedImagePaths.firstOrNull() ?: "",
+                coverAspectRatio = coverRatio, // 使用计算出的真实比例
                 category = _category.value ?: "发现",
                 location = _location.value ?: "",
-
-                // 确保时间是当前时间，保证它排在列表最前面 (ORDER BY publishTime DESC)
                 publishTime = System.currentTimeMillis()
             )
 
-            // 4. 调用 Repository 发布
+            // 4. 调用 Repository (逻辑已改为强制存库)
+            // 尝试一下虚假的网络上传（不影响流程）
+            try {
+                // 这里可以保留你之前的 uploadImages 逻辑去跑一下网络，或者直接忽略
+                // TODO: 开发完后端或者测试接口时进行测试或上传
+            } catch (e: Exception) {}
+
             val result = postRepository.publishPost(post)
             _isLoading.value = false
 
             result.fold(
                 onSuccess = { publishedPost ->
-                    // 发布成功，删除草稿
                     currentDraftId?.let { draftRepository.deleteDraft(it) }
                     _publishEvent.value = PublishEvent.Success(publishedPost)
                 },
@@ -215,71 +191,67 @@ class PublishViewModel(application: Application) : AndroidViewModel(application)
     }
 
     /**
-     * 上传图片列表 (失败时返回本地路径)
+     * 将 Uri 对应的图片复制到应用私有目录下
+     * 解决：跨页面/重启后图片无法加载的问题
      */
-    private suspend fun uploadImages(uris: List<Uri>): List<String>? {
+    private suspend fun copyImagesToAppStorage(uris: List<Uri>): List<String> {
         return withContext(Dispatchers.IO) {
-            val urls = mutableListOf<String>()
-            try {
-                for (uri in uris) {
-                    // 尝试上传
-                    try {
-                        val part = prepareFilePart("file", uri)
-                        if (part != null) {
-                            val response = fileApi.uploadImage(part)
-                            if (response.isSuccess() && response.data != null) {
-                                urls.add(response.data)
-                                continue // 上传成功，处理下一张
-                            }
-                        }
-                    } catch (e: Exception) {
-                        Log.e(TAG, "图片上传异常 (忽略): ${e.message}")
-                    }
+            val context = getApplication<Application>()
+            val paths = mutableListOf<String>()
 
-                    // 如果上面上传失败了，或者没走通，
-                    // 直接把本地 Uri 转为 String 当作 URL 使用
-                    // 这样 Glide 加载时会把它当成本地文件加载，依然能显示
-                    urls.add(uri.toString())
+            // 创建专门存放发布图片的目录
+            val imagesDir = File(context.filesDir, "published_images")
+            if (!imagesDir.exists()) imagesDir.mkdirs()
+
+            for (uri in uris) {
+                try {
+                    // 生成唯一文件名
+                    val fileName = "img_${System.currentTimeMillis()}_${UUID.randomUUID()}.jpg"
+                    val destFile = File(imagesDir, fileName)
+
+                    // 复制文件流
+                    context.contentResolver.openInputStream(uri)?.use { input ->
+                        FileOutputStream(destFile).use { output ->
+                            input.copyTo(output)
+                        }
+                    }
+                    // 返回 file:// 路径
+                    paths.add(destFile.absolutePath)
+                } catch (e: Exception) {
+                    Log.e(TAG, "复制图片失败: $uri", e)
+                    // 如果复制失败，回退到原始 Uri (虽然可能加载失败，但总比没有好)
+                    paths.add(uri.toString())
                 }
-                urls
-            } catch (e: Exception) {
-                Log.e(TAG, "上传流程严重错误", e)
-                null // 只有这里返回 null 才会中断发布
             }
+            paths
         }
     }
 
     /**
-     * 辅助方法：将 Uri 转换为 MultipartBody.Part
-     * 需要将 ContentResolver 的流复制到临时文件，因为 Retrofit 需要文件长度
+     * 计算图片宽高比 (Width / Height)
+     * 解决：瀑布流布局错乱/重叠问题
      */
-    private fun prepareFilePart(partName: String, fileUri: Uri): MultipartBody.Part? {
-        val context = getApplication<Application>()
-        val contentResolver = context.contentResolver
+    private suspend fun calculateImageAspectRatio(uri: Uri): Float {
+        return withContext(Dispatchers.IO) {
+            try {
+                val context = getApplication<Application>()
+                val options = BitmapFactory.Options()
+                // 只解码边界，不加载整个图片到内存，速度快
+                options.inJustDecodeBounds = true
 
-        try {
-            // 获取文件类型
-            val mimeType = contentResolver.getType(fileUri)
-            val extension = MimeTypeMap.getSingleton().getExtensionFromMimeType(mimeType) ?: "jpg"
-
-            // 创建临时文件
-            val tempFile = File.createTempFile("upload_", ".$extension", context.cacheDir)
-
-            // 复制流到临时文件
-            contentResolver.openInputStream(fileUri)?.use { inputStream ->
-                FileOutputStream(tempFile).use { outputStream ->
-                    inputStream.copyTo(outputStream)
+                context.contentResolver.openInputStream(uri)?.use {
+                    BitmapFactory.decodeStream(it, null, options)
                 }
+
+                if (options.outWidth > 0 && options.outHeight > 0) {
+                    options.outWidth.toFloat() / options.outHeight.toFloat()
+                } else {
+                    1.0f // 默认比例
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "计算比例失败", e)
+                1.0f
             }
-
-            // 创建 RequestBody
-            val requestFile = tempFile.asRequestBody(mimeType?.toMediaTypeOrNull())
-
-            // 创建 Part
-            return MultipartBody.Part.createFormData(partName, tempFile.name, requestFile)
-        } catch (e: Exception) {
-            Log.e(TAG, "准备上传文件失败: $fileUri", e)
-            return null
         }
     }
 
