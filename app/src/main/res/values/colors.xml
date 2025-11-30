@@ -24,4 +24,8 @@
 
     <!-- 分割线 -->
     <color name="divider">#E5E5E5</color>
+    <!-- 分割线颜色 -->
+    <color name="divider_color">#E0E0E0</color>
+
+    <color name="text_hint">#999999</color>
 </resources>

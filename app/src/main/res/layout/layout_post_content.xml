@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 帖子内容区域 -->
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:paddingHorizontal="14dp"
+    android:paddingTop="12dp">
+
+    <TextView
+        android:id="@+id/post_description"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textColor="@color/black"
+        android:textSize="20sp"
+        android:textStyle="bold"
+        android:lineSpacingMultiplier="1.2"
+        tools:text="[发现 P1] 周末的杭州西湖 (3:4 竖图)" />
+
+    <TextView
+        android:id="@+id/post_detail"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:lineSpacingExtra="4dp"
+        android:textColor="#333333"
+        android:textSize="16sp"
+        tools:text="今天天气真好，西湖边人山人海。" />
+
+    <TextView
+        android:id="@+id/post_time_position"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="12dp"
+        android:textColor="#999999"
+        android:textSize="12sp"
+        tools:text="编辑于 2024-01-01 · 杭州市" />
+
+</LinearLayout>

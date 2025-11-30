@@ -14,222 +14,43 @@
         android:id="@+id/app_bar"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:background="@android:color/white"
-        android:stateListAnimator="@null">
+        android:background="@android:color/transparent"
+        android:stateListAnimator="@null"
+        app:elevation="0dp">
 
-        <LinearLayout
+        <com.google.android.material.appbar.CollapsingToolbarLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="vertical"
             app:layout_scrollFlags="scroll">
 
-            <!-- 顶部用户信息栏 -->
-            <androidx.constraintlayout.widget.ConstraintLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:paddingBottom="10dp">
-
-                <ImageView
-                    android:id="@+id/home_return"
-                    android:layout_width="48dp"
-                    android:layout_height="48dp"
-                    android:padding="9dp"
-                    android:layout_marginStart="2dp"
-                    android:layout_marginTop="2dp"
-                    android:src="@drawable/outline_arrow_back_24"
-                    android:background="?attr/selectableItemBackgroundBorderless"
-                    app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintTop_toTopOf="parent" />
-
-                <ImageView
-                    android:id="@+id/post_user_avatar"
-                    android:layout_width="38dp"
-                    android:layout_height="38dp"
-                    android:layout_marginStart="10dp"
-                    android:background="@drawable/user_avatar_bg"
-                    android:scaleType="centerCrop"
-                    android:src="@drawable/ic_launcher_foreground"
-                    app:layout_constraintBottom_toBottomOf="@+id/home_return"
-                    app:layout_constraintStart_toEndOf="@+id/home_return"
-                    app:layout_constraintTop_toTopOf="@+id/home_return" />
-
-                <TextView
-                    android:id="@+id/post_user_name"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="10dp"
-                    android:layout_marginEnd="10dp"
-                    android:gravity="center_vertical"
-                    android:text="@string/feed_default_name"
-                    android:textColor="#000000"
-                    android:textSize="18sp"
-                    android:textStyle="bold"
-                    app:layout_constraintBottom_toBottomOf="@+id/post_user_avatar"
-                    app:layout_constraintEnd_toStartOf="@+id/followButton"
-                    app:layout_constraintStart_toEndOf="@+id/post_user_avatar"
-                    app:layout_constraintTop_toTopOf="@+id/post_user_avatar" />
-
-                <TextView
-                    android:id="@+id/followButton"
-                    android:layout_width="70dp"
-                    android:layout_height="32dp"
-                    android:layout_marginEnd="15dp"
-                    android:background="@drawable/button_focus"
-                    android:gravity="center"
-                    android:includeFontPadding="false"
-                    android:text="关注"
-                    android:textColor="@color/selected_color"
-                    android:textSize="14sp"
-                    android:textStyle="bold"
-                    app:layout_constraintBottom_toBottomOf="@+id/post_user_avatar"
-                    app:layout_constraintEnd_toStartOf="@id/share_icon"
-                    app:layout_constraintTop_toTopOf="@+id/post_user_avatar" />
-
-                <ImageView
-                    android:id="@+id/share_icon"
-                    android:layout_width="28dp"
-                    android:layout_height="28dp"
-                    android:layout_marginEnd="15dp"
-                    android:scaleType="centerCrop"
-                    android:src="@drawable/share_icon"
-                    app:layout_constraintBottom_toBottomOf="@+id/post_user_avatar"
-                    app:layout_constraintEnd_toEndOf="parent"
-                    app:layout_constraintTop_toTopOf="@+id/post_user_avatar" />
-
-            </androidx.constraintlayout.widget.ConstraintLayout>
-
-            <!-- 图片轮播区域 -->
-            <androidx.constraintlayout.widget.ConstraintLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content">
-
-                <!-- 图片容器 -->
-                <androidx.viewpager2.widget.ViewPager2
-                    android:id="@+id/view_pager"
-                    android:layout_width="match_parent"
-                    android:layout_height="500dp"
-                    app:layout_constraintTop_toTopOf="parent"
-                    app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintEnd_toEndOf="parent" />
-
-                <!-- 指示器 (小圆点) -->
-                <!-- tabIconTint=@null 防止图片被着色 -->
-                <!-- layout_constraintTop_toBottomOf=@id/view_pager 放在图片下方 -->
-                <!-- tabMinWidth=0dp 和 padding 配合，让圆点更紧凑 -->
-                <com.google.android.material.tabs.TabLayout
-                    android:id="@+id/view_pager_indicator"
-                    android:layout_width="wrap_content"
-                    android:layout_height="16dp"
-                    android:layout_marginTop="8dp"
-                    android:layout_marginBottom="4dp"
-                    android:background="@android:color/transparent"
-                    app:tabIndicatorHeight="0dp"
-                    app:tabRippleColor="@android:color/transparent"
-                    app:tabGravity="center"
-                    app:tabMinWidth="0dp"
-                    app:tabPaddingStart="2dp"
-                    app:tabPaddingEnd="2dp"
-                    app:tabIconTint="@null"
-                    app:layout_constraintTop_toBottomOf="@id/view_pager"
-                    app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintEnd_toEndOf="parent"
-                    app:layout_constraintBottom_toBottomOf="parent" />
-
-            </androidx.constraintlayout.widget.ConstraintLayout>
-
-            <!-- 帖子内容区域 -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:paddingHorizontal="12dp"
-                android:paddingTop="4dp">
+                android:orientation="vertical">
 
-                <TextView
-                    android:id="@+id/post_description"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="帖子标题"
-                    android:textColor="@color/black"
-                    android:textSize="22sp"
-                    android:textStyle="bold" />
+                <!-- 顶部用户信息栏 - 抽取为独立布局 -->
+                <include layout="@layout/layout_post_header" />
 
-                <TextView
-                    android:id="@+id/post_detail"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="8dp"
-                    android:lineSpacingExtra="4dp"
-                    android:text="帖子正文内容"
-                    android:textColor="#333333"
-                    android:textSize="18sp" />
+                <!-- 图片轮播区域 - 自适应高度 -->
+                <include layout="@layout/layout_post_image_pager" />
 
-                <TextView
-                    android:id="@+id/post_time_position"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="12dp"
-                    android:text="编辑于"
-                    android:textColor="#999999"
-                    android:textSize="12sp" />
-            </LinearLayout>
+                <!-- 帖子内容区域 -->
+                <include layout="@layout/layout_post_content" />
 
-            <View
-                android:layout_width="match_parent"
-                android:layout_height="1dp"
-                android:layout_marginTop="15dp"
-                android:background="#EEEEEE" />
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:paddingBottom="8dp">
-
-                <TextView
-                    android:id="@+id/post_comment_counts"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="12dp"
-                    android:layout_marginTop="12dp"
-                    android:letterSpacing="0.05"
-                    android:text="共x条评论"
-                    android:textColor="@color/black"
-                    android:textSize="16sp"
-                    android:textStyle="bold" />
-
-                <LinearLayout
+                <!-- 分割线 -->
+                <View
                     android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginHorizontal="12dp"
-                    android:layout_marginTop="12dp"
-                    android:gravity="center_vertical"
-                    android:orientation="horizontal">
+                    android:layout_height="1dp"
+                    android:layout_marginTop="15dp"
+                    android:background="#EEEEEE" />
 
-                    <ImageView
-                        android:id="@+id/post_mine_avatar"
-                        android:layout_width="32dp"
-                        android:layout_height="32dp"
-                        android:background="@drawable/user_avatar_bg"
-                        android:src="@drawable/ic_launcher_foreground" />
+                <!-- 评论输入区域 -->
+                <include layout="@layout/layout_comment_input" />
 
-                    <EditText
-                        android:id="@+id/comment_input"
-                        android:layout_width="0dp"
-                        android:layout_height="36dp"
-                        android:layout_marginStart="10dp"
-                        android:layout_weight="1"
-                        android:background="@drawable/comment_input_background"
-                        android:hint="写评论..."
-                        android:imeOptions="actionSend"
-                        android:inputType="text"
-                        android:paddingHorizontal="12dp"
-                        android:textColor="@color/black"
-                        android:textSize="14sp" />
-                </LinearLayout>
             </LinearLayout>
 
-        </LinearLayout>
+        </com.google.android.material.appbar.CollapsingToolbarLayout>
+
     </com.google.android.material.appbar.AppBarLayout>
 
     <androidx.recyclerview.widget.RecyclerView
@@ -237,7 +58,9 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:clipToPadding="false"
+        android:overScrollMode="never"
         android:paddingBottom="20dp"
-        app:layout_behavior="@string/appbar_scrolling_view_behavior" />
+        app:layout_behavior="@string/appbar_scrolling_view_behavior"
+        tools:listitem="@layout/item_comment" />
 
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

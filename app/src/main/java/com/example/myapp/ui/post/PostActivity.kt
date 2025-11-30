@@ -1,7 +1,6 @@
 package com.example.myapp.ui.post
 
 import android.os.Bundle
-import android.util.Log
 import android.view.View
 import android.view.inputmethod.EditorInfo
 import android.widget.EditText
@@ -23,7 +22,8 @@ import com.example.myapp.ui.post.recyclerCommentView.CommentAdapter
 import com.example.myapp.ui.post.recyclerCommentView.FooterAdapter
 import com.google.android.material.tabs.TabLayout
 import com.google.android.material.tabs.TabLayoutMediator
-
+import com.example.myapp.ui.post.recyclerCommentView.CommentDividerDecoration
+import com.example.myapp.ui.post.pagerView.setDynamicHeightByImage
 class PostActivity : AppCompatActivity() {
 
     companion object {
@@ -95,17 +95,22 @@ class PostActivity : AppCompatActivity() {
         btnFollow = findViewById(R.id.followButton)
         ivShare = findViewById(R.id.share_icon)
 
-        val rootView = findViewById<android.view.View>(R.id.main)
-
         viewPager2 = findViewById(R.id.view_pager)
         tabLayout = findViewById(R.id.view_pager_indicator)
 
-        pagerAdapter = PagerViewAdapter(imageTransName) {
-            supportStartPostponedEnterTransition()
-        }
+        // 【优化】使用新的 adapter，支持动态高度
+        pagerAdapter = PagerViewAdapter(
+            targetTransitionName = imageTransName,
+            onFirstImageLoaded = {
+                supportStartPostponedEnterTransition()
+            },
+            onFirstImageSizeReady = { width, height ->
+                // 根据第一张图片尺寸动态调整容器高度
+                viewPager2.setDynamicHeightByImage(width, height)
+            }
+        )
         viewPager2.adapter = pagerAdapter
 
-        // [关键修改] 使用 setIcon 而不是 tabBackground
         TabLayoutMediator(tabLayout, viewPager2) { tab, _ ->
             tab.setIcon(R.drawable.indicator_selector)
         }.attach()
@@ -120,26 +125,28 @@ class PostActivity : AppCompatActivity() {
 
         commentRecyclerView = findViewById(R.id.recyclerview_comments)
 
-        val layoutManager = LinearLayoutManager(this) // 获取 LayoutManager 引用
+        val layoutManager = LinearLayoutManager(this)
         commentRecyclerView.layoutManager = layoutManager
+
+        // 【优化】添加分割线 ItemDecoration
+        commentRecyclerView.addItemDecoration(
+            CommentDividerDecoration.create(this)
+        )
 
         commentAdapter = CommentAdapter(
             onReplyClick = { comment -> onReplyComment(comment) },
             onLikeClick = { comment -> postViewModel.toggleCommentLike(comment.id) },
             onAvatarClick = { /* 跳转用户主页 */ }
         )
-        // 【新增】滚动监听实现分页加载
+
+        // 滚动监听保持不变...
         commentRecyclerView.addOnScrollListener(object : RecyclerView.OnScrollListener() {
             override fun onScrolled(recyclerView: RecyclerView, dx: Int, dy: Int) {
                 super.onScrolled(recyclerView, dx, dy)
-
-                // 只有向下滑动才检查
                 if (dy > 0) {
                     val visibleItemCount = layoutManager.childCount
                     val totalItemCount = layoutManager.itemCount
                     val firstVisibleItemPosition = layoutManager.findFirstVisibleItemPosition()
-
-                    // 预加载阈值：倒数第 3 个 item 可见时触发加载
                     if ((visibleItemCount + firstVisibleItemPosition) >= totalItemCount - 3
                         && firstVisibleItemPosition >= 0) {
                         postViewModel.loadMoreComments()
@@ -147,6 +154,7 @@ class PostActivity : AppCompatActivity() {
                 }
             }
         })
+
         footerAdapter = FooterAdapter()
         val concatAdapter = ConcatAdapter(commentAdapter, footerAdapter)
         commentRecyclerView.adapter = concatAdapter

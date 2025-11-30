@@ -26,4 +26,13 @@
     <string name="no_content">暂无内容</string>
     <!-- TODO: Remove or change this placeholder text -->
     <string name="hello_blank_fragment">Hello blank fragment</string>
+
+    <string name="back">返回</string>
+    <string name="share">分享</string>
+    <string name="follow">关注</string>
+    <string name="following">已关注</string>
+    <string name="user_avatar">用户头像</string>
+    <string name="my_avatar">我的头像</string>
+    <string name="post_image">帖子图片</string>
+    <string name="write_comment">写评论…</string>
 </resources>

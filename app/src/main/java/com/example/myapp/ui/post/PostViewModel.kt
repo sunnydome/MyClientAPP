@@ -52,7 +52,7 @@ class PostViewModel(application: Application) : AndroidViewModel(application) {
     // 新增分页相关状态
     private var commentPage = 1
     private var hasMoreComments = true
-    private val PAGE_SIZE = 10
+    private val PAGE_SIZE = 5
 
     // 标记是否正在加载更多（区别于全局 isLoading）
     private val _isLoadingMore = MutableLiveData(false)
