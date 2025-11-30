@@ -4,6 +4,7 @@ import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
+import androidx.lifecycle.switchMap
 import androidx.lifecycle.viewModelScope
 import com.example.myapp.data.database.AppDatabase
 import com.example.myapp.data.model.Comment
@@ -20,15 +21,27 @@ class PostViewModel(application: Application) : AndroidViewModel(application) {
     private val postRepository: PostRepository = PostRepository.getInstance(database)
     private val commentRepository: CommentRepository = CommentRepository.getInstance(database)
 
-    private var currentPostId: String? = null
 
     // 帖子详情 (观察本地数据库)
     private val _post = MutableLiveData<Post?>()
-    val post: LiveData<Post?> = _post
 
+    // 创建一个“触发器” LiveData，用于存储当前的 postId
+    private val _postId = MutableLiveData<String>()
+
+    // 用于内部逻辑获取当前 ID (保持与 _postId 同步或直接读取 _postId.value)
+    private val currentPostId: String?
+        get() = _postId.value
+
+    // 使用 switchMap 转换。每当 _postId 变化时，自动去 Repository 查新的 LiveData
+    // 帖子详情 (观察本地数据库)
+    val post: LiveData<Post?> = _postId.switchMap { id ->
+        postRepository.getPostById(id)
+    }
     // 评论列表 (观察本地数据库)
     private val _comments = MutableLiveData<List<Comment>>()
-    val comments: LiveData<List<Comment>> = _comments
+    val comments: LiveData<List<Comment>> = _postId.switchMap { id ->
+        commentRepository.getTopLevelComments(id)
+    }
 
     private val _isLoading = MutableLiveData<Boolean>(false)
     val isLoading: LiveData<Boolean> = _isLoading
@@ -36,41 +49,49 @@ class PostViewModel(application: Application) : AndroidViewModel(application) {
     private val _actionEvent = MutableLiveData<ActionEvent?>()
     val actionEvent: LiveData<ActionEvent?> = _actionEvent
 
+    // 新增分页相关状态
+    private var commentPage = 1
+    private var hasMoreComments = true
+    private val PAGE_SIZE = 10
+
+    // 标记是否正在加载更多（区别于全局 isLoading）
+    private val _isLoadingMore = MutableLiveData(false)
+    val isLoadingMore: LiveData<Boolean> = _isLoadingMore
     /**
      * 初始化加载
      */
     fun loadPost(postId: String) {
-        currentPostId = postId
+        // 防止重复加载同一帖子
+        if (_postId.value == postId) return
 
-        // 1. 立即观察本地数据库，保证秒开
-        postRepository.getPostById(postId).observeForever { post ->
-            _post.value = post
-        }
-        commentRepository.getTopLevelComments(postId).observeForever { comments ->
-            _comments.value = comments
-        }
+        // 只需要更新触发器，上面的 post 和 comments 会自动更新
+        _postId.value = postId
 
-        // 2. 后台请求最新数据 (静默刷新)
+        // 触发网络刷新
         refreshData(postId)
     }
 
     /**
-     * 刷新帖子详情和评论
+     * 刷新帖子详情和评论（重置为第一页）
      */
     fun refreshData(postId: String) {
+        // 重置分页状态
+        commentPage = 1
+        hasMoreComments = true
+
         viewModelScope.launch {
-            // 并行请求详情和评论
             try {
                 coroutineScope {
                     val deferredPost = async { postRepository.fetchPostDetail(postId) }
-                    val deferredComments = async { commentRepository.refreshComments(postId) }
+                    // 调用 Repository，获取第一页数据
+                    val deferredComments = async { commentRepository.refreshComments(postId, 1) }
 
                     val postResult = deferredPost.await()
                     val commentResult = deferredComments.await()
 
-                    // 这里可以处理错误，比如 Toast 提示“网络连接失败”，但不需要清空 _post 数据
-                    if (postResult.isFailure) {
-                        // log error
+                    // 处理第一页结果，判断是否有更多
+                    commentResult.onSuccess { list ->
+                        hasMoreComments = list.size >= PAGE_SIZE
                     }
                 }
             } catch (e: Exception) {
@@ -79,6 +100,36 @@ class PostViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    /**
+     * 加载更多评论
+     */
+    fun loadMoreComments() {
+        val postId = currentPostId ?: return
+
+        // 检查状态：如果正在加载、没有更多数据、或正在刷新，则不执行
+        if (_isLoading.value == true || _isLoadingMore.value == true || !hasMoreComments) {
+            return
+        }
+
+        viewModelScope.launch {
+            _isLoadingMore.value = true // 显示底部 Loading
+
+            val nextPage = commentPage + 1
+            val result = commentRepository.refreshComments(postId, nextPage)
+
+            _isLoadingMore.value = false // 隐藏底部 Loading
+
+            result.onSuccess { list ->
+                if (list.isNotEmpty()) {
+                    commentPage = nextPage
+                    // 如果返回数量少于分页大小，说明没有更多了
+                    hasMoreComments = list.size >= PAGE_SIZE
+                } else {
+                    hasMoreComments = false
+                }
+            }
+        }
+    }
     /**
      * 切换点赞
      */

@@ -23,7 +23,7 @@ class CommentRepository(private val database: AppDatabase) {
     /**
      * 刷新评论列表 (网络 -> 数据库)
      */
-    suspend fun refreshComments(postId: String, page: Int = 1): Result<Unit> {
+    suspend fun refreshComments(postId: String, page: Int = 1): Result<List<Comment>> {
         return withContext(Dispatchers.IO) {
             try {
                 val response = commentApi.getComments(postId, page)
@@ -31,10 +31,9 @@ class CommentRepository(private val database: AppDatabase) {
                     val comments = response.data
                     // 插入数据库
                     commentDao.insertAll(comments)
-                    // 可选：如果这是第一页，可以把该帖子的旧评论清理一下，防止缓存堆积
-                    // if (page == 1) commentDao.deleteByPostId(postId)
 
-                    Result.success(Unit)
+                    // 返回具体的 comments 列表，而不是 Unit
+                    Result.success(comments)
                 } else {
                     Result.failure(Exception(response.message))
                 }

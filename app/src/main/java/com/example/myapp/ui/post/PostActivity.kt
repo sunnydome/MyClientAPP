@@ -69,7 +69,6 @@ class PostActivity : AppCompatActivity() {
         postViewModel = ViewModelProvider(this)[PostViewModel::class.java]
 
         val imageTransName = intent.getStringExtra("extra_trans_name_image")
-        val cardTransName = intent.getStringExtra("extra_trans_name_card")
 
         setEnterSharedElementCallback(object : SharedElementCallback() {
             override fun onMapSharedElements(names: MutableList<String>?, sharedElements: MutableMap<String, View>?) {
@@ -82,14 +81,14 @@ class PostActivity : AppCompatActivity() {
             }
         })
         supportPostponeEnterTransition()
-        initViews(imageTransName, cardTransName)
+        initViews(imageTransName)
         setupListeners()
         observeViewModel()
 
         postViewModel.loadPost(postId)
     }
 
-    private fun initViews(imageTransName: String?, cardTransName: String?) {
+    private fun initViews(imageTransName: String?) {
         ivBack = findViewById(R.id.home_return)
         ivAuthorAvatar = findViewById(R.id.post_user_avatar)
         tvAuthorName = findViewById(R.id.post_user_name)
@@ -97,9 +96,6 @@ class PostActivity : AppCompatActivity() {
         ivShare = findViewById(R.id.share_icon)
 
         val rootView = findViewById<android.view.View>(R.id.main)
-        if (cardTransName != null) {
-            androidx.core.view.ViewCompat.setTransitionName(rootView, cardTransName)
-        }
 
         viewPager2 = findViewById(R.id.view_pager)
         tabLayout = findViewById(R.id.view_pager_indicator)
@@ -123,13 +119,34 @@ class PostActivity : AppCompatActivity() {
         etComment = findViewById(R.id.comment_input)
 
         commentRecyclerView = findViewById(R.id.recyclerview_comments)
-        commentRecyclerView.layoutManager = LinearLayoutManager(this)
+
+        val layoutManager = LinearLayoutManager(this) // 获取 LayoutManager 引用
+        commentRecyclerView.layoutManager = layoutManager
 
         commentAdapter = CommentAdapter(
             onReplyClick = { comment -> onReplyComment(comment) },
             onLikeClick = { comment -> postViewModel.toggleCommentLike(comment.id) },
             onAvatarClick = { /* 跳转用户主页 */ }
         )
+        // 【新增】滚动监听实现分页加载
+        commentRecyclerView.addOnScrollListener(object : RecyclerView.OnScrollListener() {
+            override fun onScrolled(recyclerView: RecyclerView, dx: Int, dy: Int) {
+                super.onScrolled(recyclerView, dx, dy)
+
+                // 只有向下滑动才检查
+                if (dy > 0) {
+                    val visibleItemCount = layoutManager.childCount
+                    val totalItemCount = layoutManager.itemCount
+                    val firstVisibleItemPosition = layoutManager.findFirstVisibleItemPosition()
+
+                    // 预加载阈值：倒数第 3 个 item 可见时触发加载
+                    if ((visibleItemCount + firstVisibleItemPosition) >= totalItemCount - 3
+                        && firstVisibleItemPosition >= 0) {
+                        postViewModel.loadMoreComments()
+                    }
+                }
+            }
+        })
         footerAdapter = FooterAdapter()
         val concatAdapter = ConcatAdapter(commentAdapter, footerAdapter)
         commentRecyclerView.adapter = concatAdapter
@@ -207,6 +224,13 @@ class PostActivity : AppCompatActivity() {
                 else -> {}
             }
             postViewModel.clearActionEvent()
+            // 【新增】观察“加载更多”的状态，控制 Footer 显示
+            postViewModel.isLoadingMore.observe(this) { isLoadingMore ->
+                // 这里可以更新 FooterAdapter 的状态
+                // 简单实现：如果正在加载，显示 Footer；否则隐藏（或者显示“到底了”）
+                // 你可能需要修改 FooterAdapter 来支持“加载中”文本
+                footerAdapter.isVisible = isLoadingMore
+            }
         }
     }
 
