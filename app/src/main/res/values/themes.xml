@@ -43,5 +43,25 @@
         <item name="cornerFamily">rounded</item>
         <item name="cornerSize">50%</item>
     </style>
+    <!-- 图片查看器主题 -->
+    <style name="Theme.ImageViewer" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+        <!-- 透明背景 -->
+        <item name="android:windowIsTranslucent">true</item>
+        <item name="android:windowBackground">@android:color/transparent</item>
 
+        <!-- 禁用默认动画，使用共享元素动画 -->
+        <item name="android:windowAnimationStyle">@null</item>
+
+        <!-- 启用 Activity 转场动画 -->
+        <item name="android:windowActivityTransitions">true</item>
+
+        <!-- 共享元素动画 -->
+        <item name="android:windowSharedElementEnterTransition">@transition/image_transition</item>
+        <item name="android:windowSharedElementExitTransition">@transition/image_transition</item>
+
+        <!-- 允许内容延伸到系统栏下方 -->
+        <item name="android:windowDrawsSystemBarBackgrounds">true</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+    </style>
 </resources>

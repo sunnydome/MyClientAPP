@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<transitionSet xmlns:android="http://schemas.android.com/apk/res/android"
+    android:duration="300"
+    android:interpolator="@android:interpolator/fast_out_slow_in">
+
+    <!-- 图片变换动画 -->
+    <changeImageTransform />
+
+    <!-- 边界变化动画 -->
+    <changeBounds />
+
+    <!-- 缩放/旋转变换动画 -->
+    <changeTransform />
+
+</transitionSet>

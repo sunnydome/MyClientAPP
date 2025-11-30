@@ -24,6 +24,8 @@ import com.google.android.material.tabs.TabLayout
 import com.google.android.material.tabs.TabLayoutMediator
 import com.example.myapp.ui.post.recyclerCommentView.CommentDividerDecoration
 import com.example.myapp.ui.post.pagerView.setDynamicHeightByImage
+import com.example.myapp.ui.imageviewer.ImageViewerActivity
+
 class PostActivity : AppCompatActivity() {
 
     companion object {
@@ -107,6 +109,10 @@ class PostActivity : AppCompatActivity() {
             onFirstImageSizeReady = { width, height ->
                 // 根据第一张图片尺寸动态调整容器高度
                 viewPager2.setDynamicHeightByImage(width, height)
+            },
+            onImageClick = { position, imageView ->
+                // 点击图片时打开全屏查看器
+                openImageViewer(position, imageView)
             }
         )
         viewPager2.adapter = pagerAdapter
@@ -266,6 +272,29 @@ class PostActivity : AppCompatActivity() {
             content = content,
             parentId = replyToComment?.id,
             replyToName = replyToComment?.authorName
+        )
+    }
+    private fun openImageViewer(position: Int, imageView: ImageView) {
+        val post = postViewModel.post.value ?: return
+        val imageUrls = post.imageUrls.ifEmpty { listOf(post.coverUrl) }
+
+        if (imageUrls.isEmpty()) return
+
+        // 获取 View 当前已有的 transitionName (来自 FeedAdapter)
+        // 如果为空（比如非首图），则不需要共享元素动画，或者你可以为非首图生成临时名字，但绝不要覆盖首图的名字
+        val existingTransitionName = imageView.transitionName
+
+        // 删除下面这行
+        // val transitionName = "image_transition_$position"
+        // imageView.transitionName = transitionName  <-- 删除这行罪魁祸首
+
+        ImageViewerActivity.start(
+            context = this,
+            imageUrls = imageUrls,
+            currentPosition = position,
+            sharedElement = imageView,
+            // 直接传递现有的名字给大图页
+            transitionName = existingTransitionName
         )
     }
 }
