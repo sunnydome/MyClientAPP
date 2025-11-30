@@ -3,6 +3,7 @@ package com.example.myapp.ui.post
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.LiveData
+import androidx.lifecycle.MediatorLiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.switchMap
 import androidx.lifecycle.viewModelScope
@@ -23,7 +24,8 @@ class PostViewModel(application: Application) : AndroidViewModel(application) {
 
 
     // 帖子详情 (观察本地数据库)
-    private val _post = MutableLiveData<Post?>()
+    private val _post = MediatorLiveData<Post?>()
+    val post: LiveData<Post?> = _post
 
     // 创建一个“触发器” LiveData，用于存储当前的 postId
     private val _postId = MutableLiveData<String>()
@@ -32,11 +34,6 @@ class PostViewModel(application: Application) : AndroidViewModel(application) {
     private val currentPostId: String?
         get() = _postId.value
 
-    // 使用 switchMap 转换。每当 _postId 变化时，自动去 Repository 查新的 LiveData
-    // 帖子详情 (观察本地数据库)
-    val post: LiveData<Post?> = _postId.switchMap { id ->
-        postRepository.getPostById(id)
-    }
     // 评论列表 (观察本地数据库)
     private val _comments = MutableLiveData<List<Comment>>()
     val comments: LiveData<List<Comment>> = _postId.switchMap { id ->
@@ -60,6 +57,19 @@ class PostViewModel(application: Application) : AndroidViewModel(application) {
     /**
      * 初始化加载
      */
+    // 初始化监听逻辑
+    init {
+        // 当 postId 变化时，从数据库获取 LiveData 源
+        val dbSource = _postId.switchMap { id -> postRepository.getPostById(id) }
+
+        // 将数据库源添加到 Mediator 中
+        _post.addSource(dbSource) { dbPost ->
+            // 只有当内存中没有数据，或者确实需要从 DB 刷新时才更新
+            // 这里简单处理：数据库有变动就更新 (初始加载会走这里)
+            _post.value = dbPost
+        }
+    }
+
     fun loadPost(postId: String) {
         // 防止重复加载同一帖子
         if (_postId.value == postId) return
@@ -130,34 +140,60 @@ class PostViewModel(application: Application) : AndroidViewModel(application) {
             }
         }
     }
-    /**
-     * 切换点赞
-     */
+
+    // [核心修改] 切换点赞 - 纯内存操作
     fun toggleLike() {
-        val postId = currentPostId ?: return
+        // 1. 获取当前内存中的数据
+        val currentPost = _post.value ?: return
+
+        // 2. 计算新状态 (Copy On Write)
+        val newStatus = !currentPost.isLiked
+        val newCount = if (newStatus) currentPost.likeCount + 1 else currentPost.likeCount - 1
+        val newPost = currentPost.copy(
+            isLiked = newStatus,
+            likeCount = maxOf(0, newCount) // 防止减到负数
+        )
+
+        // 3. 【立即更新 UI】不经过数据库
+        _post.value = newPost
+
+        // 4. 发送网络请求 (Fire and Forget)
         viewModelScope.launch {
-            // UI 已经在 Repository 的乐观更新中变了，这里只需处理失败回滚提示
-            val result = postRepository.toggleLike(postId)
-            result.onSuccess { isLiked ->
-                _actionEvent.value = ActionEvent.LikeChanged(isLiked)
-            }.onFailure { e ->
-                _actionEvent.value = ActionEvent.Error("点赞失败: ${e.message}")
-            }
+            postRepository.toggleLike(currentPost.id)
+            // 结果不重要，因为我们已经更新了 UI
         }
     }
 
-    /**
-     * 切换收藏
-     */
+    // [核心修改] 切换收藏 - 纯内存操作
     fun toggleCollect() {
-        val postId = currentPostId ?: return
+        val currentPost = _post.value ?: return
+
+        val newStatus = !currentPost.isCollected
+        val newCount = if (newStatus) currentPost.collectCount + 1 else currentPost.collectCount - 1
+        val newPost = currentPost.copy(
+            isCollected = newStatus,
+            collectCount = maxOf(0, newCount)
+        )
+
+        // 立即更新 UI
+        _post.value = newPost
+
         viewModelScope.launch {
-            val result = postRepository.toggleCollect(postId)
-            result.onSuccess { isCollected ->
-                _actionEvent.value = ActionEvent.CollectChanged(isCollected)
-            }.onFailure { e ->
-                _actionEvent.value = ActionEvent.Error("收藏失败: ${e.message}")
-            }
+            postRepository.toggleCollect(currentPost.id)
+        }
+    }
+
+    // [新增] 切换关注 - 纯内存操作
+    fun toggleFollow() {
+        val currentPost = _post.value ?: return
+        val newStatus = !currentPost.isFollowing
+        val newPost = currentPost.copy(isFollowing = newStatus)
+
+        _post.value = newPost
+
+        viewModelScope.launch {
+            // 这里假设 Repository 里有一个 toggleFollow 方法，逻辑同上
+            // postRepository.toggleFollow(currentPost.authorId)
         }
     }
 

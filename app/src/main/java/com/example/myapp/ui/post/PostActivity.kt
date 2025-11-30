@@ -5,6 +5,7 @@ import android.view.View
 import android.view.inputmethod.EditorInfo
 import android.widget.EditText
 import android.widget.ImageView
+import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.SharedElementCallback
@@ -14,24 +15,15 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.myapp.R
 import com.example.myapp.data.model.Comment
+import com.example.myapp.data.model.Post
 import com.example.myapp.ui.post.recyclerCommentView.CommentAdapter
 import com.example.myapp.ui.post.recyclerCommentView.CommentDividerDecoration
 import com.example.myapp.ui.post.recyclerCommentView.FooterAdapter
 import com.example.myapp.ui.imageviewer.ImageViewerActivity
+import androidx.core.view.ViewCompat
 
 /**
- * 帖子详情页 - 重构版
- *
- * 采用小红书/Instagram 的架构：
- * 单一 RecyclerView + ConcatAdapter，包含：
- * 1. PostHeaderAdapter - 帖子头部（导航、图片、内容）
- * 2. CommentAdapter - 评论列表
- * 3. FooterAdapter - 底部加载提示
- *
- * 优点：
- * - 避免 CoordinatorLayout + AppBarLayout 的复杂联动问题
- * - 滚动流畅，无嵌套滚动
- * - 不会有初始位置偏移的问题
+ * 帖子详情页
  */
 class PostActivity : AppCompatActivity() {
 
@@ -43,8 +35,13 @@ class PostActivity : AppCompatActivity() {
 
     // Views
     private lateinit var recyclerView: RecyclerView
-    private lateinit var ivMineAvatar: ImageView
     private lateinit var etComment: EditText
+
+    // [重要] 这里是新的变量，对应 xml 中的 btn_like, btn_collect, btn_comment
+    // 请确保删除了旧的 layoutLike, ivLike 等变量
+    private lateinit var btnLike: TextView
+    private lateinit var btnCollect: TextView
+    private lateinit var btnComment: TextView
 
     // Adapters
     private lateinit var headerAdapter: PostHeaderAdapter
@@ -67,13 +64,9 @@ class PostActivity : AppCompatActivity() {
         }
 
         postViewModel = ViewModelProvider(this)[PostViewModel::class.java]
-
         imageTransName = intent.getStringExtra("extra_trans_name_image")
 
-        // 设置共享元素动画回调
         setupSharedElementCallback()
-
-        // 延迟过渡动画，等待图片加载
         supportPostponeEnterTransition()
 
         initViews()
@@ -89,10 +82,8 @@ class PostActivity : AppCompatActivity() {
                 names: MutableList<String>?,
                 sharedElements: MutableMap<String, View>?
             ) {
-                // 获取当前显示的 ImageView
                 val headerHolder = headerAdapter.getHeaderViewHolder(recyclerView)
                 if (headerHolder != null && headerHolder.getCurrentPosition() != 0) {
-                    // 如果不是第一张图片，移除共享元素
                     imageTransName?.let { name ->
                         names?.remove(name)
                         sharedElements?.remove(name)
@@ -104,48 +95,44 @@ class PostActivity : AppCompatActivity() {
 
     private fun initViews() {
         recyclerView = findViewById(R.id.recyclerview_post)
-        ivMineAvatar = findViewById(R.id.post_mine_avatar)
         etComment = findViewById(R.id.comment_input)
+
+        // [重要] 绑定新的 ID (对应 activity_post.xml 中的 ID)
+        btnLike = findViewById(R.id.btn_like)
+        btnCollect = findViewById(R.id.btn_collect)
+        btnComment = findViewById(R.id.btn_comment)
 
         // 初始化 HeaderAdapter
         headerAdapter = PostHeaderAdapter(
             targetTransitionName = imageTransName,
             onBackClick = { onBackPressedDispatcher.onBackPressed() },
-            onFollowClick = { postViewModel.toggleLike() },
+            // [重要] 使用 toggleFollow
+            onFollowClick = { postViewModel.toggleFollow() },
             onShareClick = { Toast.makeText(this, "分享功能开发中", Toast.LENGTH_SHORT).show() },
             onAvatarClick = { /* 跳转用户主页 */ },
             onImageClick = { position, imageView -> openImageViewer(position, imageView) },
             onFirstImageLoaded = { supportStartPostponedEnterTransition() },
-            onFirstImageSizeReady = { _, _ -> /* 高度调整已在 HeaderAdapter 内部处理 */ }
+            onFirstImageSizeReady = { _, _ -> }
         )
 
-        // 初始化 CommentAdapter
         commentAdapter = CommentAdapter(
             onReplyClick = { comment -> onReplyComment(comment) },
             onLikeClick = { comment -> postViewModel.toggleCommentLike(comment.id) },
             onAvatarClick = { /* 跳转用户主页 */ }
         )
 
-        // 初始化 FooterAdapter
         footerAdapter = FooterAdapter()
-
-        // 使用 ConcatAdapter 组合所有 Adapter
         concatAdapter = ConcatAdapter(headerAdapter, commentAdapter, footerAdapter)
 
-        // 设置 RecyclerView
         val layoutManager = LinearLayoutManager(this)
         recyclerView.layoutManager = layoutManager
         recyclerView.adapter = concatAdapter
 
-        // 添加评论分割线（只对评论项生效）
         recyclerView.addItemDecoration(
-            CommentDividerDecoration.createForConcatAdapter(
-                context = this,
-                headerItemCount = 1  // HeaderAdapter 占 1 个位置
-            )
+            CommentDividerDecoration.createForConcatAdapter(this, headerItemCount = 1)
         )
 
-        // 滚动监听 - 加载更多
+        // 滚动监听
         recyclerView.addOnScrollListener(object : RecyclerView.OnScrollListener() {
             override fun onScrolled(recyclerView: RecyclerView, dx: Int, dy: Int) {
                 super.onScrolled(recyclerView, dx, dy)
@@ -172,24 +159,36 @@ class PostActivity : AppCompatActivity() {
                 false
             }
         }
+
+        // [重要] 监听新的 TextView 按钮
+        btnLike.setOnClickListener {
+            postViewModel.toggleLike()
+        }
+
+        btnCollect.setOnClickListener {
+            postViewModel.toggleCollect()
+        }
+
+        btnComment.setOnClickListener {
+            etComment.requestFocus()
+            showKeyboard()
+        }
     }
 
     private fun observeViewModel() {
-        // 观察帖子数据
         postViewModel.post.observe(this) { post ->
             post?.let {
                 headerAdapter.setPost(it)
+                // [重要] 更新底部状态
+                updateBottomBar(it)
             }
         }
 
-        // 观察评论列表
         postViewModel.comments.observe(this) { comments ->
             commentAdapter.updateData(comments)
-            // 有评论时显示 footer
             footerAdapter.isVisible = comments.isNotEmpty()
         }
 
-        // 观察操作事件
         postViewModel.actionEvent.observe(this) { event ->
             when (event) {
                 is PostViewModel.ActionEvent.CommentAdded -> {
@@ -207,11 +206,26 @@ class PostActivity : AppCompatActivity() {
             postViewModel.clearActionEvent()
         }
 
-        // 观察加载更多状态
         postViewModel.isLoadingMore.observe(this) { isLoadingMore ->
-            // 可以在这里更新 FooterAdapter 显示 "加载中" 或 "到底了"
             footerAdapter.isVisible = !isLoadingMore && (postViewModel.comments.value?.isNotEmpty() == true)
         }
+    }
+
+    /**
+     * [重要] 更新底部栏 UI
+     * TextView 的 isSelected 会自动触发图标变色
+     */
+    private fun updateBottomBar(post: Post) {
+        // 更新点赞
+        btnLike.isSelected = post.isLiked
+        btnLike.text = if (post.likeCount > 0) post.likeCount.toString() else "赞"
+
+        // 更新收藏
+        btnCollect.isSelected = post.isCollected
+        btnCollect.text = if (post.collectCount > 0) post.collectCount.toString() else "收藏"
+
+        // 更新评论数
+        btnComment.text = if (post.commentCount > 0) post.commentCount.toString() else "评论"
     }
 
     private fun onReplyComment(comment: Comment) {
@@ -232,7 +246,6 @@ class PostActivity : AppCompatActivity() {
             Toast.makeText(this, "请输入评论内容", Toast.LENGTH_SHORT).show()
             return
         }
-
         postViewModel.addComment(
             content = content,
             parentId = replyToComment?.id,
@@ -243,10 +256,9 @@ class PostActivity : AppCompatActivity() {
     private fun openImageViewer(position: Int, imageView: ImageView) {
         val post = postViewModel.post.value ?: return
         val imageUrls = post.imageUrls.ifEmpty { listOf(post.coverUrl) }
-
         if (imageUrls.isEmpty()) return
 
-        val existingTransitionName = imageView.transitionName
+        val existingTransitionName = ViewCompat.getTransitionName(imageView)
 
         ImageViewerActivity.start(
             context = this,

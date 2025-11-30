@@ -3,12 +3,14 @@ package com.example.myapp.ui.home
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.LiveData
+import androidx.lifecycle.MediatorLiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.viewModelScope
 import com.example.myapp.data.database.AppDatabase
 import com.example.myapp.data.model.FeedItem
 import com.example.myapp.data.repository.PostRepository
 import kotlinx.coroutines.launch
+import kotlin.math.max
 
 class HomeViewModel(application: Application) : AndroidViewModel(application) {
 
@@ -21,7 +23,7 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
     val currentCategory: LiveData<String> = _currentCategory
 
     // 缓存每个分类的 LiveData
-    private val feedsCache = mutableMapOf<String, LiveData<List<FeedItem>>>()
+    private val feedsCache = mutableMapOf<String, MediatorLiveData<List<FeedItem>>>()
 
     // 缓存每个分类的当前页码
     private val pageCache = mutableMapOf<String, Int>()
@@ -53,9 +55,24 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
     // 专门用于上拉加载的锁 Map，防止单分类并发
     private val loadingMoreStateMap = mutableMapOf<String, Boolean>()
 
+    /**
+     * 使用 MediatorLiveData 组合数据源：
+     * 1. 监听数据库 (addSource): 当下拉刷新/加载更多写入数据库时，自动更新 UI。
+     * 2. 内存修改 (setValue): 当点赞时，直接修改内存列表，立即更新 UI。
+     */
     fun getFeedsByCategory(category: String): LiveData<List<FeedItem>> {
         return feedsCache.getOrPut(category) {
-            postRepository.getFeedsByCategory(category)
+            val mediator = MediatorLiveData<List<FeedItem>>()
+
+            // 获取数据库源
+            val dbSource = postRepository.getFeedsByCategory(category)
+
+            // 将数据库源接入 Mediator
+            mediator.addSource(dbSource) { list ->
+                // 只有当数据库真的有数据变动（比如网络刷新回来）时，才覆盖内存数据
+                mediator.value = list
+            }
+            mediator
         }
     }
 
@@ -122,7 +139,43 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    /**
+     * 切换点赞 - 纯内存操作 + 异步网络请求
+     * 解决点赞导致列表刷新闪烁、卡顿的问题
+     */
     fun toggleLike(postId: String) {
+        // 遍历所有缓存的列表（因为同一个帖子可能出现在"发现"和"关注"里）
+        // 直接在内存中找到该帖子并修改状态，触发 LiveData 通知 UI 局部刷新
+        feedsCache.values.forEach { mediator ->
+            val currentList = mediator.value ?: return@forEach
+
+            // 查找列表中是否有这个 ID
+            val index = currentList.indexOfFirst { it.id == postId }
+            if (index != -1) {
+                // 复制列表（必须创建新集合，否则 LiveData 可能不通知）
+                val newList = ArrayList(currentList)
+                val item = newList[index]
+
+                // 计算新状态
+                val newStatus = !item.isLiked
+                val newCount = if (newStatus) item.likeCount + 1 else max(0, item.likeCount - 1)
+
+                // 复制 Item 并修改属性
+                val newItem = item.copy(
+                    isLiked = newStatus,
+                    likeCount = newCount
+                )
+
+                // 替换列表中的旧 Item
+                newList[index] = newItem
+
+                // 立即更新 UI
+                mediator.value = newList
+            }
+        }
+
+        // Fire and Forget (发后即忘)
+        // 即使失败也不回滚，保证 UI 顺滑
         viewModelScope.launch {
             postRepository.toggleLike(postId)
         }

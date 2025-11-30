@@ -120,10 +120,32 @@ class PostHeaderAdapter(
             // 设置指示器
             setupIndicator(urls.size)
 
+            if (viewPager2.adapter?.itemCount != urls.size) {
+                setupIndicator(urls.size)
+            }
             // 绑定帖子内容
             tvTitle.text = post.title
             tvContent.text = post.content
             tvAuthorName.text = post.authorName
+            // 根据 post.isFollowing 的真实状态来显示 UI
+            if (post.isFollowing) {
+                btnFollow.text = "已关注"
+                btnFollow.isSelected = true
+            } else {
+                btnFollow.text = "关注"
+                btnFollow.isSelected = false
+            }
+
+            btnFollow.setOnClickListener {
+                // 立即给用户视觉反馈 (防止网络慢的时候感觉没点上)
+                // 但真实状态最终会由 LiveData 回调刷新
+                val nextState = !btnFollow.isSelected
+                btnFollow.isSelected = nextState
+                btnFollow.text = if (nextState) "已关注" else "关注"
+
+                // 触发回调
+                onFollowClick()
+            }
             tvTimeLocation.text = "编辑于 ${post.getFormattedTime()} · ${post.location.ifBlank { "未知地点" }}"
             tvCommentCount.text = "共${post.commentCount}条评论"
 

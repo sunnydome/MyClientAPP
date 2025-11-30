@@ -47,6 +47,14 @@ interface PostDao {
     """)
     fun searchPosts(keyword: String): LiveData<List<Post>>
 
+    // [新增] 更新某个作者的所有帖子的关注状态
+    @Query("UPDATE posts SET isFollowing = :isFollowing WHERE authorId = :authorId")
+    suspend fun updateFollowStatusByAuthor(authorId: String, isFollowing: Boolean)
+
+    // [新增] 单独获取某篇帖子的关注状态（用于Repository逻辑判断）
+    @Query("SELECT isFollowing FROM posts WHERE id = :postId")
+    suspend fun getFollowStatus(postId: String): Boolean?
+
     // ========== 插入/更新 ==========
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)

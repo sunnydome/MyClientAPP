@@ -63,6 +63,9 @@ data class Post(
     // 当前用户是否已收藏
     val isCollected: Boolean = false,
 
+    //是否关注作者
+    val isFollowing: Boolean = false,
+
     // 是否为草稿
     val isDraft: Boolean = false,
 

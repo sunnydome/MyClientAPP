@@ -1,9 +1,4 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!--
-重构版布局：
-使用单一 RecyclerView 替代 CoordinatorLayout + AppBarLayout
-所有内容（头部、评论）都在同一个 RecyclerView 中滚动
--->
 <androidx.constraintlayout.widget.ConstraintLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
@@ -11,10 +6,9 @@
     android:id="@+id/main"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context=".ui.post.PostActivity"
-    android:fitsSystemWindows="true">
+    android:fitsSystemWindows="true"
+    android:background="@color/white">
 
-    <!-- 单一 RecyclerView，包含所有内容 -->
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/recyclerview_post"
         android:layout_width="match_parent"
@@ -26,51 +20,90 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent" />
 
-    <!-- 底部输入栏 -->
     <androidx.constraintlayout.widget.ConstraintLayout
         android:id="@+id/bottom_input_bar"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:elevation="10dp"
+        android:layout_height="56dp"
         android:paddingHorizontal="12dp"
-        android:paddingVertical="8dp"
+        android:background="@color/white"
+        android:elevation="10dp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent">
 
-
-        <ImageView
-            android:id="@+id/post_mine_avatar"
-            android:layout_width="36dp"
-            android:layout_height="36dp"
-            android:background="@drawable/user_avatar_bg"
-            android:contentDescription="@string/my_avatar"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintTop_toTopOf="parent"
-            tools:src="@drawable/ic_launcher_foreground" />
-
         <EditText
             android:id="@+id/comment_input"
             android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="12dp"
-            android:minHeight="48dp"
+            android:layout_height="36dp"
+            android:layout_marginEnd="12dp"
             android:background="@drawable/comment_input_background"
             android:hint="@string/write_comment"
             android:imeOptions="actionSend"
             android:importantForAutofill="no"
-            android:inputType="textMultiLine"
-            android:maxLines="3"
+            android:inputType="text"
+            android:maxLines="1"
             android:paddingHorizontal="12dp"
-            android:paddingVertical="8dp"
-            android:textColor="@color/black"
             android:textSize="14sp"
-            android:gravity="center_vertical"
-            app:layout_constraintStart_toEndOf="@id/post_mine_avatar"
-            app:layout_constraintEnd_toEndOf="parent"
+            android:textColor="@color/black"
+            android:textColorHint="#999999"
             app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintTop_toTopOf="parent" />
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toStartOf="@id/btn_like" />
+
+        <TextView
+            android:id="@+id/btn_like"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:text="赞"
+            android:textSize="12sp"
+            android:textColor="#333333"
+            android:drawableStart="@drawable/ic_like_selector"
+            android:drawablePadding="4dp"
+            android:padding="8dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:clickable="true"
+            android:focusable="true"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintEnd_toStartOf="@id/btn_collect" />
+
+        <TextView
+            android:id="@+id/btn_collect"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:text="收藏"
+            android:textSize="12sp"
+            android:textColor="#333333"
+            android:drawableStart="@drawable/ic_collect_selector"
+            android:drawablePadding="4dp"
+            android:padding="8dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:clickable="true"
+            android:focusable="true"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintEnd_toStartOf="@id/btn_comment" />
+
+        <TextView
+            android:id="@+id/btn_comment"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:text="评论"
+            android:textSize="12sp"
+            android:textColor="#333333"
+            android:drawableStart="@drawable/ic_chat_bubble"
+            android:drawablePadding="4dp"
+            android:padding="8dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:clickable="true"
+            android:focusable="true"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintEnd_toEndOf="parent" />
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 
