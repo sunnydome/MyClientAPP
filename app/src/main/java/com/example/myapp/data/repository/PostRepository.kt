@@ -9,6 +9,7 @@ import com.example.myapp.data.network.RetrofitClient
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import android.util.Log
+import androidx.room.withTransaction
 /**
  * 帖子数据仓库
  * 协调 网络API (数据源头) 与 本地数据库 (缓存/UI数据源)
@@ -59,22 +60,17 @@ class PostRepository(private val database: AppDatabase) {
 
                     val postsWithCategory = posts.map { it.copy(category = category) }
 
-                    // ============ 修改重点：暂时移除 withTransaction ============
-                    // 直接执行数据库操作，看看具体卡在哪一步，或者报什么错
-                    Log.d(TAG, "👉 准备直接操作数据库...")
-
-                    if (page == 1) {
-                        Log.d(TAG, "🧹 正在执行 deleteByCategory...")
-                        // 如果这一行报错，说明 PostDao.deleteByCategory 定义有问题
-                        postDao.deleteByCategory(category)
-                        Log.d(TAG, "✅ deleteByCategory 完成")
+                    // 使用事务包裹：删除和插入作为一个整体执行
+                    // 这样 LiveData 只会收到最后的结果，不会收到中间“被清空”的状态，彻底解决闪屏问题
+                    database.withTransaction {
+                        if (page == 1) {
+                            Log.d(TAG, "🧹 事务中: 执行 deleteByCategory...")
+                            postDao.deleteByCategory(category)
+                        }
+                        Log.d(TAG, "💾 事务中: 执行 insertAll...")
+                        postDao.insertAll(postsWithCategory)
                     }
-
-                    Log.d(TAG, "💾 正在执行 insertAll...")
-                    // 如果这一行报错，可能是数据类型转换或主键冲突问题
-                    postDao.insertAll(postsWithCategory)
-                    Log.d(TAG, "✅ insertAll 完成")
-                    // ========================================================
+                    Log.d(TAG, "✅ 数据库事务完成")
 
                     Result.success(response.data.hasMore)
                 } else {

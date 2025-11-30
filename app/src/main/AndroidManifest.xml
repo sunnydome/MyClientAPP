@@ -41,6 +41,12 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+        <activity
+            android:name=".ui.imageviewer.ImageViewerActivity"
+            android:theme="@style/Theme.ImageViewer"
+            android:configChanges="orientation|screenSize|screenLayout|keyboardHidden"
+            android:screenOrientation="fullSensor"
+            android:resizeableActivity="true" />
     </application>
 
 </manifest>

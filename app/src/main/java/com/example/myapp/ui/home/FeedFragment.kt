@@ -150,10 +150,16 @@ class FeedFragment : Fragment() {
             }
         }
 
-        // 观察加载状态 -> 控制刷新动画的结束
+        // 观察加载状态 -> 控制刷新动画的显示与隐藏
         homeViewModel.getLoadingState(category).observe(viewLifecycleOwner) { isLoading ->
-            if (!isLoading) {
-                // 如果 loading 结束，收起下拉刷新的圆圈
+            // 修改这里：不仅处理结束，也要处理开始
+            if (isLoading) {
+                // 如果正在后台自动刷新，且用户没有在手势拖拽，则显示刷新球
+                if (!swipeRefreshLayout.isRefreshing) {
+                    swipeRefreshLayout.isRefreshing = true
+                }
+            } else {
+                // loading 结束，收起下拉刷新的圆圈
                 swipeRefreshLayout.isRefreshing = false
             }
         }
