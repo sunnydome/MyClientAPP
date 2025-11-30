@@ -17,6 +17,8 @@ import com.example.myapp.R
  * 1. 减少 View 数量，提升性能
  * 2. 不参与布局测量，更高效
  * 3. 可以灵活控制显示逻辑（如最后一项不显示）
+ *
+ * 支持 ConcatAdapter：可以指定 header 数量，只为评论项绘制分割线
  */
 class CommentDividerDecoration(
     context: Context,
@@ -24,7 +26,9 @@ class CommentDividerDecoration(
     private val dividerHeight: Float = 0.5f,
     private val marginStart: Float = 16f,
     private val marginEnd: Float = 16f,
-    private val showLastDivider: Boolean = false
+    private val showLastDivider: Boolean = false,
+    private val headerItemCount: Int = 0,  // Header 占用的 item 数量
+    private val footerItemCount: Int = 1   // Footer 占用的 item 数量
 ) : RecyclerView.ItemDecoration() {
 
     private val paint = Paint().apply {
@@ -47,8 +51,21 @@ class CommentDividerDecoration(
         val position = parent.getChildAdapterPosition(view)
         val itemCount = parent.adapter?.itemCount ?: 0
 
-        // 最后一项不添加间距（除非明确要求显示）
-        if (position < itemCount - 1 || showLastDivider) {
+        // 跳过 Header 项
+        if (position < headerItemCount) {
+            return
+        }
+
+        // 跳过 Footer 项
+        if (position >= itemCount - footerItemCount) {
+            return
+        }
+
+        // 计算评论区的最后一个位置
+        val lastCommentPosition = itemCount - footerItemCount - 1
+
+        // 最后一个评论不添加间距（除非明确要求显示）
+        if (position < lastCommentPosition || showLastDivider) {
             outRect.bottom = dividerHeightPx
         }
     }
@@ -61,8 +78,17 @@ class CommentDividerDecoration(
             val child = parent.getChildAt(i)
             val position = parent.getChildAdapterPosition(child)
 
-            // 最后一项不绘制分割线（除非明确要求显示）
-            if (position >= itemCount - 1 && !showLastDivider) continue
+            // 跳过 Header 项
+            if (position < headerItemCount) continue
+
+            // 跳过 Footer 项
+            if (position >= itemCount - footerItemCount) continue
+
+            // 计算评论区的最后一个位置
+            val lastCommentPosition = itemCount - footerItemCount - 1
+
+            // 最后一个评论不绘制分割线（除非明确要求显示）
+            if (position >= lastCommentPosition && !showLastDivider) continue
 
             val left = parent.paddingLeft + marginStartPx
             val right = parent.width - parent.paddingRight - marginEndPx
@@ -97,6 +123,26 @@ class CommentDividerDecoration(
                 dividerHeight = heightDp,
                 marginStart = marginStartDp,
                 marginEnd = marginEndDp
+            )
+        }
+
+        /**
+         * 为 ConcatAdapter 创建分割线
+         * 只为评论项（排除 header 和 footer）绘制分割线
+         *
+         * @param context 上下文
+         * @param headerItemCount Header 占用的 item 数量（默认 1）
+         * @param footerItemCount Footer 占用的 item 数量（默认 1）
+         */
+        fun createForConcatAdapter(
+            context: Context,
+            headerItemCount: Int = 1,
+            footerItemCount: Int = 1
+        ): CommentDividerDecoration {
+            return CommentDividerDecoration(
+                context = context,
+                headerItemCount = headerItemCount,
+                footerItemCount = footerItemCount
             )
         }
     }

@@ -5,7 +5,6 @@ import android.view.View
 import android.view.inputmethod.EditorInfo
 import android.widget.EditText
 import android.widget.ImageView
-import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.SharedElementCallback
@@ -13,19 +12,27 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.recyclerview.widget.ConcatAdapter
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import androidx.viewpager2.widget.ViewPager2
-import com.bumptech.glide.Glide
 import com.example.myapp.R
 import com.example.myapp.data.model.Comment
-import com.example.myapp.ui.post.pagerView.PagerViewAdapter
 import com.example.myapp.ui.post.recyclerCommentView.CommentAdapter
-import com.example.myapp.ui.post.recyclerCommentView.FooterAdapter
-import com.google.android.material.tabs.TabLayout
-import com.google.android.material.tabs.TabLayoutMediator
 import com.example.myapp.ui.post.recyclerCommentView.CommentDividerDecoration
-import com.example.myapp.ui.post.pagerView.setDynamicHeightByImage
+import com.example.myapp.ui.post.recyclerCommentView.FooterAdapter
 import com.example.myapp.ui.imageviewer.ImageViewerActivity
 
+/**
+ * 帖子详情页 - 重构版
+ *
+ * 采用小红书/Instagram 的架构：
+ * 单一 RecyclerView + ConcatAdapter，包含：
+ * 1. PostHeaderAdapter - 帖子头部（导航、图片、内容）
+ * 2. CommentAdapter - 评论列表
+ * 3. FooterAdapter - 底部加载提示
+ *
+ * 优点：
+ * - 避免 CoordinatorLayout + AppBarLayout 的复杂联动问题
+ * - 滚动流畅，无嵌套滚动
+ * - 不会有初始位置偏移的问题
+ */
 class PostActivity : AppCompatActivity() {
 
     companion object {
@@ -34,28 +41,19 @@ class PostActivity : AppCompatActivity() {
 
     private lateinit var postViewModel: PostViewModel
 
-    // ========== Views (对应 activity_post.xml) ==========
-    private lateinit var ivBack: ImageView
-    private lateinit var ivAuthorAvatar: ImageView
-    private lateinit var tvAuthorName: TextView
-    private lateinit var btnFollow: TextView
-    private lateinit var ivShare: ImageView
-
-    private lateinit var viewPager2: ViewPager2
-    private lateinit var tabLayout: TabLayout
-    private lateinit var pagerAdapter: PagerViewAdapter
-    private lateinit var tvTitle: TextView
-    private lateinit var tvContent: TextView
-    private lateinit var tvTimeLocation: TextView
-    private lateinit var tvCommentCount: TextView
-
+    // Views
+    private lateinit var recyclerView: RecyclerView
     private lateinit var ivMineAvatar: ImageView
     private lateinit var etComment: EditText
-    private lateinit var commentRecyclerView: RecyclerView
+
+    // Adapters
+    private lateinit var headerAdapter: PostHeaderAdapter
     private lateinit var commentAdapter: CommentAdapter
     private lateinit var footerAdapter: FooterAdapter
+    private lateinit var concatAdapter: ConcatAdapter
 
     private var replyToComment: Comment? = null
+    private var imageTransName: String? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -70,83 +68,85 @@ class PostActivity : AppCompatActivity() {
 
         postViewModel = ViewModelProvider(this)[PostViewModel::class.java]
 
-        val imageTransName = intent.getStringExtra("extra_trans_name_image")
+        imageTransName = intent.getStringExtra("extra_trans_name_image")
 
-        setEnterSharedElementCallback(object : SharedElementCallback() {
-            override fun onMapSharedElements(names: MutableList<String>?, sharedElements: MutableMap<String, View>?) {
-                if (::viewPager2.isInitialized && viewPager2.currentItem != 0) {
-                    if (imageTransName != null) {
-                        names?.remove(imageTransName)
-                        sharedElements?.remove(imageTransName)
-                    }
-                }
-            }
-        })
+        // 设置共享元素动画回调
+        setupSharedElementCallback()
+
+        // 延迟过渡动画，等待图片加载
         supportPostponeEnterTransition()
-        initViews(imageTransName)
+
+        initViews()
         setupListeners()
         observeViewModel()
 
         postViewModel.loadPost(postId)
     }
 
-    private fun initViews(imageTransName: String?) {
-        ivBack = findViewById(R.id.home_return)
-        ivAuthorAvatar = findViewById(R.id.post_user_avatar)
-        tvAuthorName = findViewById(R.id.post_user_name)
-        btnFollow = findViewById(R.id.followButton)
-        ivShare = findViewById(R.id.share_icon)
-
-        viewPager2 = findViewById(R.id.view_pager)
-        tabLayout = findViewById(R.id.view_pager_indicator)
-
-        // 【优化】使用新的 adapter，支持动态高度
-        pagerAdapter = PagerViewAdapter(
-            targetTransitionName = imageTransName,
-            onFirstImageLoaded = {
-                supportStartPostponedEnterTransition()
-            },
-            onFirstImageSizeReady = { width, height ->
-                // 根据第一张图片尺寸动态调整容器高度
-                viewPager2.setDynamicHeightByImage(width, height)
-            },
-            onImageClick = { position, imageView ->
-                // 点击图片时打开全屏查看器
-                openImageViewer(position, imageView)
+    private fun setupSharedElementCallback() {
+        setEnterSharedElementCallback(object : SharedElementCallback() {
+            override fun onMapSharedElements(
+                names: MutableList<String>?,
+                sharedElements: MutableMap<String, View>?
+            ) {
+                // 获取当前显示的 ImageView
+                val headerHolder = headerAdapter.getHeaderViewHolder(recyclerView)
+                if (headerHolder != null && headerHolder.getCurrentPosition() != 0) {
+                    // 如果不是第一张图片，移除共享元素
+                    imageTransName?.let { name ->
+                        names?.remove(name)
+                        sharedElements?.remove(name)
+                    }
+                }
             }
-        )
-        viewPager2.adapter = pagerAdapter
+        })
+    }
 
-        TabLayoutMediator(tabLayout, viewPager2) { tab, _ ->
-            tab.setIcon(R.drawable.indicator_selector)
-        }.attach()
-
-        tvTitle = findViewById(R.id.post_description)
-        tvContent = findViewById(R.id.post_detail)
-        tvTimeLocation = findViewById(R.id.post_time_position)
-        tvCommentCount = findViewById(R.id.post_comment_counts)
-
+    private fun initViews() {
+        recyclerView = findViewById(R.id.recyclerview_post)
         ivMineAvatar = findViewById(R.id.post_mine_avatar)
         etComment = findViewById(R.id.comment_input)
 
-        commentRecyclerView = findViewById(R.id.recyclerview_comments)
-
-        val layoutManager = LinearLayoutManager(this)
-        commentRecyclerView.layoutManager = layoutManager
-
-        // 【优化】添加分割线 ItemDecoration
-        commentRecyclerView.addItemDecoration(
-            CommentDividerDecoration.create(this)
+        // 初始化 HeaderAdapter
+        headerAdapter = PostHeaderAdapter(
+            targetTransitionName = imageTransName,
+            onBackClick = { onBackPressedDispatcher.onBackPressed() },
+            onFollowClick = { postViewModel.toggleLike() },
+            onShareClick = { Toast.makeText(this, "分享功能开发中", Toast.LENGTH_SHORT).show() },
+            onAvatarClick = { /* 跳转用户主页 */ },
+            onImageClick = { position, imageView -> openImageViewer(position, imageView) },
+            onFirstImageLoaded = { supportStartPostponedEnterTransition() },
+            onFirstImageSizeReady = { _, _ -> /* 高度调整已在 HeaderAdapter 内部处理 */ }
         )
 
+        // 初始化 CommentAdapter
         commentAdapter = CommentAdapter(
             onReplyClick = { comment -> onReplyComment(comment) },
             onLikeClick = { comment -> postViewModel.toggleCommentLike(comment.id) },
             onAvatarClick = { /* 跳转用户主页 */ }
         )
 
-        // 滚动监听保持不变...
-        commentRecyclerView.addOnScrollListener(object : RecyclerView.OnScrollListener() {
+        // 初始化 FooterAdapter
+        footerAdapter = FooterAdapter()
+
+        // 使用 ConcatAdapter 组合所有 Adapter
+        concatAdapter = ConcatAdapter(headerAdapter, commentAdapter, footerAdapter)
+
+        // 设置 RecyclerView
+        val layoutManager = LinearLayoutManager(this)
+        recyclerView.layoutManager = layoutManager
+        recyclerView.adapter = concatAdapter
+
+        // 添加评论分割线（只对评论项生效）
+        recyclerView.addItemDecoration(
+            CommentDividerDecoration.createForConcatAdapter(
+                context = this,
+                headerItemCount = 1  // HeaderAdapter 占 1 个位置
+            )
+        )
+
+        // 滚动监听 - 加载更多
+        recyclerView.addOnScrollListener(object : RecyclerView.OnScrollListener() {
             override fun onScrolled(recyclerView: RecyclerView, dx: Int, dy: Int) {
                 super.onScrolled(recyclerView, dx, dy)
                 if (dy > 0) {
@@ -154,34 +154,17 @@ class PostActivity : AppCompatActivity() {
                     val totalItemCount = layoutManager.itemCount
                     val firstVisibleItemPosition = layoutManager.findFirstVisibleItemPosition()
                     if ((visibleItemCount + firstVisibleItemPosition) >= totalItemCount - 3
-                        && firstVisibleItemPosition >= 0) {
+                        && firstVisibleItemPosition >= 0
+                    ) {
                         postViewModel.loadMoreComments()
                     }
                 }
             }
         })
-
-        footerAdapter = FooterAdapter()
-        val concatAdapter = ConcatAdapter(commentAdapter, footerAdapter)
-        commentRecyclerView.adapter = concatAdapter
     }
 
     private fun setupListeners() {
-        ivBack.setOnClickListener {
-            onBackPressedDispatcher.onBackPressed()
-        }
-
-        btnFollow.setOnClickListener {
-            it.isSelected = !it.isSelected
-            btnFollow.text = if (it.isSelected) "已关注" else "关注"
-            postViewModel.toggleLike()
-        }
-
-        ivShare.setOnClickListener {
-            Toast.makeText(this, "分享功能开发中", Toast.LENGTH_SHORT).show()
-        }
-
-        etComment.setOnEditorActionListener { v, actionId, event ->
+        etComment.setOnEditorActionListener { _, actionId, _ ->
             if (actionId == EditorInfo.IME_ACTION_SEND || actionId == EditorInfo.IME_ACTION_DONE) {
                 sendComment()
                 true
@@ -192,44 +175,28 @@ class PostActivity : AppCompatActivity() {
     }
 
     private fun observeViewModel() {
+        // 观察帖子数据
         postViewModel.post.observe(this) { post ->
             post?.let {
-                val urls = post.imageUrls.ifEmpty { listOf(post.coverUrl) }
-                pagerAdapter.setList(urls)
-
-                if (urls.size > 1) {
-                    tabLayout.visibility = View.VISIBLE
-                } else {
-                    tabLayout.visibility = View.GONE
-                }
-
-                tvTitle.text = post.title
-                tvContent.text = post.content
-                tvAuthorName.text = post.authorName
-                tvTimeLocation.text = "编辑于 ${post.getFormattedTime()} · ${post.location.ifBlank { "未知地点" }}"
-                tvCommentCount.text = "共${post.commentCount}条评论"
-
-                Glide.with(this)
-                    .load(post.authorAvatar)
-                    .placeholder(R.drawable.avatar_placeholder)
-                    .circleCrop()
-                    .into(ivAuthorAvatar)
+                headerAdapter.setPost(it)
             }
         }
 
+        // 观察评论列表
         postViewModel.comments.observe(this) { comments ->
             commentAdapter.updateData(comments)
-            footerAdapter.isVisible = true
+            // 有评论时显示 footer
+            footerAdapter.isVisible = comments.isNotEmpty()
         }
 
+        // 观察操作事件
         postViewModel.actionEvent.observe(this) { event ->
             when (event) {
                 is PostViewModel.ActionEvent.CommentAdded -> {
                     Toast.makeText(this, "评论成功", Toast.LENGTH_SHORT).show()
                     etComment.text.clear()
                     etComment.clearFocus()
-                    val imm = getSystemService(android.content.Context.INPUT_METHOD_SERVICE) as android.view.inputmethod.InputMethodManager
-                    imm.hideSoftInputFromWindow(etComment.windowToken, 0)
+                    hideKeyboard()
                     clearReplyState()
                 }
                 is PostViewModel.ActionEvent.Error -> {
@@ -238,13 +205,12 @@ class PostActivity : AppCompatActivity() {
                 else -> {}
             }
             postViewModel.clearActionEvent()
-            // 【新增】观察“加载更多”的状态，控制 Footer 显示
-            postViewModel.isLoadingMore.observe(this) { isLoadingMore ->
-                // 这里可以更新 FooterAdapter 的状态
-                // 简单实现：如果正在加载，显示 Footer；否则隐藏（或者显示“到底了”）
-                // 你可能需要修改 FooterAdapter 来支持“加载中”文本
-                footerAdapter.isVisible = isLoadingMore
-            }
+        }
+
+        // 观察加载更多状态
+        postViewModel.isLoadingMore.observe(this) { isLoadingMore ->
+            // 可以在这里更新 FooterAdapter 显示 "加载中" 或 "到底了"
+            footerAdapter.isVisible = !isLoadingMore && (postViewModel.comments.value?.isNotEmpty() == true)
         }
     }
 
@@ -252,8 +218,7 @@ class PostActivity : AppCompatActivity() {
         replyToComment = comment
         etComment.hint = "回复 @${comment.authorName}"
         etComment.requestFocus()
-        val imm = getSystemService(android.content.Context.INPUT_METHOD_SERVICE) as android.view.inputmethod.InputMethodManager
-        imm.showSoftInput(etComment, android.view.inputmethod.InputMethodManager.SHOW_IMPLICIT)
+        showKeyboard()
     }
 
     private fun clearReplyState() {
@@ -274,27 +239,31 @@ class PostActivity : AppCompatActivity() {
             replyToName = replyToComment?.authorName
         )
     }
+
     private fun openImageViewer(position: Int, imageView: ImageView) {
         val post = postViewModel.post.value ?: return
         val imageUrls = post.imageUrls.ifEmpty { listOf(post.coverUrl) }
 
         if (imageUrls.isEmpty()) return
 
-        // 获取 View 当前已有的 transitionName (来自 FeedAdapter)
-        // 如果为空（比如非首图），则不需要共享元素动画，或者你可以为非首图生成临时名字，但绝不要覆盖首图的名字
         val existingTransitionName = imageView.transitionName
-
-        // 删除下面这行
-        // val transitionName = "image_transition_$position"
-        // imageView.transitionName = transitionName  <-- 删除这行罪魁祸首
 
         ImageViewerActivity.start(
             context = this,
             imageUrls = imageUrls,
             currentPosition = position,
             sharedElement = imageView,
-            // 直接传递现有的名字给大图页
             transitionName = existingTransitionName
         )
+    }
+
+    private fun showKeyboard() {
+        val imm = getSystemService(INPUT_METHOD_SERVICE) as android.view.inputmethod.InputMethodManager
+        imm.showSoftInput(etComment, android.view.inputmethod.InputMethodManager.SHOW_IMPLICIT)
+    }
+
+    private fun hideKeyboard() {
+        val imm = getSystemService(INPUT_METHOD_SERVICE) as android.view.inputmethod.InputMethodManager
+        imm.hideSoftInputFromWindow(etComment.windowToken, 0)
     }
 }
