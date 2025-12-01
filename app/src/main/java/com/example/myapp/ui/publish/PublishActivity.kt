@@ -195,6 +195,16 @@ class PublishActivity : FragmentActivity() {
             btnPublish.alpha = if (canPublish) 1.0f else 0.5f
         }
 
+        // 观察草稿恢复事件
+        viewModel.restoreDraftEvent.observe(this) { restored ->
+            if (restored) {
+                Toast.makeText(this, "已自动恢复上次的草稿", Toast.LENGTH_SHORT).show()
+                // 手动刷新一下 EditText 的显示（虽然 LiveData 双向绑定应该会自动更新，但确保光标位置等）
+                etTitle.setSelection(etTitle.text.length)
+                etContent.setSelection(etContent.text.length)
+            }
+        }
+
         // 观察发布事件
         viewModel.publishEvent.observe(this) { post ->
             post?.let {
@@ -206,17 +216,30 @@ class PublishActivity : FragmentActivity() {
                 viewModel.publishEventHandled()
             }
         }
+        // 观察标题变化，用于草稿恢复
+        viewModel.title.observe(this) { title ->
+            //为了防止死循环（setText触发TextWatcher，TextWatcher又更新ViewModel），加一个判断
+            if (etTitle.text.toString() != title) {
+                etTitle.setText(title)
+                // 将光标移到末尾
+                etTitle.setSelection(title.length)
+            }
+        }
+
+        // 观察内容变化，用于草稿恢复
+        viewModel.content.observe(this) { content ->
+            if (etContent.text.toString() != content) {
+                etContent.setText(content)
+                etContent.setSelection(content.length)
+            }
+        }
 
         // 观察保存草稿事件
-        viewModel.saveDraftEvent.observe(this) { draft ->
-            draft?.let {
-                // TODO: 实现草稿保存逻辑
-                // 可以保存到本地数据库或SharedPreferences
-                Toast.makeText(this, "草稿已保存", Toast.LENGTH_SHORT).show()
-                finish()
-
-                viewModel.draftEventHandled()
-            }
+        viewModel.saveDraftEvent.observe(this) {
+            // [修改] 这里的逻辑稍微简化，只要事件触发就退出
+            Toast.makeText(this, "草稿已保存", Toast.LENGTH_SHORT).show()
+            finish() // 退出页面
+            overridePendingTransition(0, R.anim.slide_down_out)
         }
     }
 

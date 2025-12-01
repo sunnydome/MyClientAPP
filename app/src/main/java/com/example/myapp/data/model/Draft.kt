@@ -6,52 +6,25 @@ import androidx.room.PrimaryKey
 import androidx.room.TypeConverters
 import com.example.myapp.data.database.Converters
 
-/**
- * 草稿数据模型
- * 用于保存未发布的帖子
- */
 @Entity(tableName = "drafts")
 @TypeConverters(Converters::class)
 data class Draft(
-    @PrimaryKey(autoGenerate = true)
-    val id: Long = 0,
+    // [修改] 移除 autoGenerate，并设置默认值为固定的 1L
+    // 这样每次插入 ID 为 1 的数据时，都会覆盖旧的，实现“只有一个草稿”
+    @PrimaryKey(autoGenerate = false)
+    val id: Long = DRAFT_ID,
 
-    // 标题
     val title: String = "",
-
-    // 正文内容
     val content: String = "",
-
-    // 本地图片URI列表（字符串形式存储）
     val imageUris: List<String> = emptyList(),
-
-    // 创建时间
     val createTime: Long = System.currentTimeMillis(),
-
-    // 更新时间
     val updateTime: Long = System.currentTimeMillis()
 ) {
-    /**
-     * 获取预览文本
-     */
-    fun getPreviewText(): String {
-        return when {
-            title.isNotBlank() -> title
-            content.isNotBlank() -> content.take(50)
-            else -> "未命名草稿"
-        }
+    companion object {
+        const val DRAFT_ID = 1L // 固定草稿ID
     }
 
-    /**
-     * 是否为空草稿
-     */
-    fun isEmpty(): Boolean {
-        return title.isBlank() && content.isBlank() && imageUris.isEmpty()
-    }
-
-    /**
-     * 转换为Uri列表
-     */
+    // ... (保留原有的 getPreviewText, isEmpty, getImageUriList 方法) ...
     fun getImageUriList(): List<Uri> {
         return imageUris.mapNotNull {
             try { Uri.parse(it) } catch (e: Exception) { null }

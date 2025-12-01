@@ -23,6 +23,9 @@ class PublishViewModel @Inject constructor(
 ): ViewModel(){
 
 
+    init {
+        checkAndLoadDraft()
+    }
     companion object {
         const val MAX_IMAGE_COUNT = 9
         const val MAX_TITLE_LENGTH = 20
@@ -59,6 +62,8 @@ class PublishViewModel @Inject constructor(
     private val _saveDraftEvent = MutableLiveData<Any?>()
     val saveDraftEvent: LiveData<Any?> = _saveDraftEvent
 
+    private val _restoreDraftEvent = MutableLiveData<Boolean>()
+    val restoreDraftEvent: LiveData<Boolean> = _restoreDraftEvent
     fun addImages(uris: List<Uri>) {
         val currentImages = _selectedImages.value ?: emptyList()
         val newImages = (currentImages + uris).take(MAX_IMAGE_COUNT)
@@ -103,6 +108,23 @@ class PublishViewModel @Inject constructor(
         _location.value = location
     }
 
+    private fun checkAndLoadDraft() {
+        viewModelScope.launch {
+            val draft = draftRepository.getSingleDraft()
+            if (draft != null) {
+                // 恢复数据
+                _title.value = draft.title
+                _content.value = draft.content
+                _selectedImages.value = draft.getImageUriList()
+
+                // 触发状态检查（让“发布”按钮变亮）
+                updateCanPublish()
+
+                // 可选：通知 UI 草稿已恢复（通过 Toast）
+                _restoreDraftEvent.value = true
+            }
+        }
+    }
     private fun updateCanPublish() {
         val hasImages = !_selectedImages.value.isNullOrEmpty()
         val hasTitle = !_title.value.isNullOrBlank()
@@ -171,7 +193,9 @@ class PublishViewModel @Inject constructor(
 
             result.fold(
                 onSuccess = { publishedPost ->
-                    currentDraftId?.let { draftRepository.deleteDraft(it) }
+                    // 发布成功，删除草稿
+                    draftRepository.deleteDraft()
+
                     _publishEvent.value = PublishEvent.Success(publishedPost)
                 },
                 onFailure = { error ->
@@ -187,28 +211,44 @@ class PublishViewModel @Inject constructor(
 
     // ========== 草稿操作 ==========
 
-    /**
-     * 保存为草稿
-     */
     fun saveDraft() {
-        if (!hasUnsavedContent()) return
+        if (!hasUnsavedContent()) {
+            // 如果内容为空，实际上应该视为“不想存草稿”，可以直接结束 Activity
+            _saveDraftEvent.value = Unit
+            return
+        }
 
         viewModelScope.launch {
             _isLoading.value = true
 
+            val currentUris = _selectedImages.value ?: emptyList()
+            var localSavedUris: List<Uri> = emptyList()
+
+            if (currentUris.isNotEmpty()) {
+                // 复制图片到私有目录，得到绝对路径字符串列表 (e.g. "/data/user/0/...")
+                val savedPaths = fileRepository.copyImagesToAppStorage(currentUris)
+
+                // 将路径转为 file:// 格式的 Uri
+                // 之前的 Uri.parse(it) 会导致缺少 scheme，Glide 无法识别
+                // 使用 Uri.fromFile(File(it)) 会自动加上 "file://" 前缀
+                localSavedUris = savedPaths.map { path ->
+                    android.net.Uri.fromFile(java.io.File(path))
+                }
+            }
+
+            // 保存草稿
             val result = draftRepository.saveDraft(
                 title = _title.value ?: "",
                 content = _content.value ?: "",
-                imageUris = _selectedImages.value ?: emptyList(),
-                existingDraftId = currentDraftId
+                imageUris = localSavedUris // 现在存入数据库的是 file:///data/... 格式
             )
 
             _isLoading.value = false
 
             result.fold(
-                onSuccess = { draftId ->
-                    currentDraftId = draftId
-                    _saveDraftEvent.value = Unit // 触发事件
+                onSuccess = {
+                    // 触发事件通知 Activity 退出
+                    _saveDraftEvent.value = Unit
                 },
                 onFailure = { error ->
                     _publishEvent.value = PublishEvent.Error(error.message ?: "保存草稿失败")
@@ -219,31 +259,6 @@ class PublishViewModel @Inject constructor(
 
     fun draftEventHandled() {
         _saveDraftEvent.value = null
-    }
-
-    /**
-     * 从草稿恢复内容
-     */
-    fun loadFromDraft(draftId: Long) {
-        viewModelScope.launch {
-            val draft = draftRepository.getDraftByIdSync(draftId) ?: return@launch
-            currentDraftId = draftId
-            _selectedImages.value = draft.getImageUriList()
-            _title.value = draft.title
-            _content.value = draft.content
-            updateCanPublish()
-        }
-    }
-
-    /**
-     * 从草稿恢复内容（兼容传递对象的方式）
-     */
-    fun loadFromDraft(draft: com.example.myapp.ui.publish.model.PublishPost) {
-        // 为了兼容旧代码的数据类，如果已经全面转用 Draft 实体，可以移除此方法
-        _selectedImages.value = draft.imageUris
-        _title.value = draft.title
-        _content.value = draft.content
-        updateCanPublish()
     }
 
     // ========== 工具方法 ==========

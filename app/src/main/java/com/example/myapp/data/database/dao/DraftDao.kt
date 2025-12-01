@@ -9,31 +9,15 @@ import com.example.myapp.data.model.Draft
  */
 @Dao
 interface DraftDao {
+    // 获取唯一的草稿
+    @Query("SELECT * FROM drafts WHERE id = :id")
+    suspend fun getDraft(id: Long = com.example.myapp.data.model.Draft.DRAFT_ID): Draft?
 
-    @Query("SELECT * FROM drafts ORDER BY updateTime DESC")
-    fun getAllDrafts(): LiveData<List<Draft>>
-
-    @Query("SELECT * FROM drafts WHERE id = :draftId")
-    fun getDraftById(draftId: Long): LiveData<Draft?>
-
-    @Query("SELECT * FROM drafts WHERE id = :draftId")
-    suspend fun getDraftByIdSync(draftId: Long): Draft?
-
+    // 插入或替换（因为ID固定，这实现了覆盖旧草稿）
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insert(draft: Draft): Long
+    suspend fun insert(draft: Draft)
 
-    @Update
-    suspend fun update(draft: Draft)
-
-    @Delete
-    suspend fun delete(draft: Draft)
-
-    @Query("DELETE FROM drafts WHERE id = :draftId")
-    suspend fun deleteById(draftId: Long)
-
-    @Query("DELETE FROM drafts")
-    suspend fun deleteAll()
-
-    @Query("SELECT COUNT(*) FROM drafts")
-    suspend fun getDraftCount(): Int
+    // 删除指定ID的草稿
+    @Query("DELETE FROM drafts WHERE id = :id")
+    suspend fun deleteById(id: Long = com.example.myapp.data.model.Draft.DRAFT_ID)
 }
