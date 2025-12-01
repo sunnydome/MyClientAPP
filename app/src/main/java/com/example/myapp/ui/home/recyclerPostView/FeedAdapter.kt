@@ -90,10 +90,26 @@ class FeedAdapter(
                 .diskCacheStrategy(DiskCacheStrategy.ALL)
                 .into(userAvatar)
 
-            // 点赞按钮状态（如果有的话）
+            // 点赞按钮状态
             likeButton?.let { button ->
                 button.isSelected = feed.isLiked
                 button.setOnClickListener {
+                    // [新增] 1. 立即更新 UI 状态
+                    button.isSelected = !button.isSelected
+
+                    // [新增] 2. 立即更新数字 (假装成功)
+                    likeCount?.let { tv ->
+                        val currentStr = tv.text.toString()
+                        // 简单解析处理，如果是 "1.2w" 这种复杂格式可能需要更复杂的逻辑
+                        // 这里做个简单处理：如果是纯数字才 +/- 1
+                        val count = currentStr.toIntOrNull()
+                        if (count != null) {
+                            val newCount = if (button.isSelected) count + 1 else maxOf(0, count - 1)
+                            tv.text = newCount.toString()
+                        }
+                    }
+
+                    // 3. 触发回调 (去 ViewModel 发请求 & 改内存数据)
                     onLikeClick?.invoke(feed)
                 }
             }

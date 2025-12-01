@@ -162,10 +162,26 @@ class PostActivity : AppCompatActivity() {
 
         // [重要] 监听新的 TextView 按钮
         btnLike.setOnClickListener {
+            // 1. UI 立即变色
+            btnLike.isSelected = !btnLike.isSelected
+            // 2. UI 数字更新 (简单的 +/- 1 逻辑)
+            val currentCount = btnLike.text.toString().toIntOrNull() ?: 0
+            val newCount = if (btnLike.isSelected) currentCount + 1 else (currentCount - 1).coerceAtLeast(0)
+            btnLike.text = if (newCount > 0) newCount.toString() else "赞"
+
+            // 3. 发送请求 (后台静默执行)
             postViewModel.toggleLike()
         }
 
         btnCollect.setOnClickListener {
+            // 1. UI 立即变色
+            btnCollect.isSelected = !btnCollect.isSelected
+            // 2. UI 数字更新
+            val currentCount = btnCollect.text.toString().toIntOrNull() ?: 0
+            val newCount = if (btnCollect.isSelected) currentCount + 1 else (currentCount - 1).coerceAtLeast(0)
+            btnCollect.text = if (newCount > 0) newCount.toString() else "收藏"
+
+            // 3. 发送请求
             postViewModel.toggleCollect()
         }
 

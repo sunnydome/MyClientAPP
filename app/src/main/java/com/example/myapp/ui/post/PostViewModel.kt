@@ -141,60 +141,26 @@ class PostViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    // [核心修改] 切换点赞 - 纯内存操作
+    // [核心修改] 纯网络请求，不更新 LiveData
     fun toggleLike() {
-        // 1. 获取当前内存中的数据
         val currentPost = _post.value ?: return
-
-        // 2. 计算新状态 (Copy On Write)
-        val newStatus = !currentPost.isLiked
-        val newCount = if (newStatus) currentPost.likeCount + 1 else currentPost.likeCount - 1
-        val newPost = currentPost.copy(
-            isLiked = newStatus,
-            likeCount = maxOf(0, newCount) // 防止减到负数
-        )
-
-        // 3. 【立即更新 UI】不经过数据库
-        _post.value = newPost
-
-        // 4. 发送网络请求 (Fire and Forget)
         viewModelScope.launch {
             postRepository.toggleLike(currentPost.id)
-            // 结果不重要，因为我们已经更新了 UI
         }
     }
 
-    // [核心修改] 切换收藏 - 纯内存操作
+    // [核心修改] 纯网络请求，不更新 LiveData
     fun toggleCollect() {
         val currentPost = _post.value ?: return
-
-        val newStatus = !currentPost.isCollected
-        val newCount = if (newStatus) currentPost.collectCount + 1 else currentPost.collectCount - 1
-        val newPost = currentPost.copy(
-            isCollected = newStatus,
-            collectCount = maxOf(0, newCount)
-        )
-
-        // 立即更新 UI
-        _post.value = newPost
-
         viewModelScope.launch {
             postRepository.toggleCollect(currentPost.id)
         }
     }
 
-    // [新增] 切换关注 - 纯内存操作
+    // [核心修改] 纯网络请求
     fun toggleFollow() {
-        val currentPost = _post.value ?: return
-        val newStatus = !currentPost.isFollowing
-        val newPost = currentPost.copy(isFollowing = newStatus)
-
-        _post.value = newPost
-
-        viewModelScope.launch {
-            // 这里假设 Repository 里有一个 toggleFollow 方法，逻辑同上
-            // postRepository.toggleFollow(currentPost.authorId)
-        }
+        // 假设 Repository 有 toggleFollow
+        // viewModelScope.launch { postRepository.toggleFollow(...) }
     }
 
     /**
