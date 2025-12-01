@@ -73,11 +73,11 @@ abstract class AppDatabase : RoomDatabase() {
         override fun onCreate(db: SupportSQLiteDatabase) {
             super.onCreate(db)
             // 在后台线程中插入初始数据
-            INSTANCE?.let { database ->
-                CoroutineScope(Dispatchers.IO).launch {
-                    populateDatabase(database)
-                }
-            }
+            //INSTANCE?.let { database ->
+            //    CoroutineScope(Dispatchers.IO).launch {
+            //        populateDatabase(database)
+            //    }
+            //}
         }
 
         /**

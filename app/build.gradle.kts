@@ -2,6 +2,7 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     id("org.jetbrains.kotlin.kapt")
+    alias(libs.plugins.hilt.android)
 }
 
 android {
@@ -101,4 +102,6 @@ dependencies {
 
     // ... 其他依赖
     implementation("androidx.tracing:tracing-ktx:1.2.0")
+    implementation(libs.hilt.android)
+    kapt(libs.hilt.compiler)
 }

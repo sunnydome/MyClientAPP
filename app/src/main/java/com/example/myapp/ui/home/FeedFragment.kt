@@ -17,7 +17,9 @@ import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
 import com.example.myapp.R
 import com.example.myapp.ui.home.recyclerPostView.FeedAdapter
 import com.example.myapp.ui.post.PostActivity
+import dagger.hilt.android.AndroidEntryPoint
 
+@AndroidEntryPoint
 class FeedFragment : Fragment() {
 
     private lateinit var feedRecyclerView: RecyclerView
@@ -52,10 +54,10 @@ class FeedFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        // 1. 初始化 ViewModel
+        // 初始化 ViewModel
         homeViewModel = ViewModelProvider(requireActivity())[HomeViewModel::class.java]
 
-        // 2. 初始化 SwipeRefreshLayout (下拉刷新)
+        // 初始化 SwipeRefreshLayout (下拉刷新)
         swipeRefreshLayout = view.findViewById(R.id.swipe_refresh)
         // 设置刷新圆圈的颜色
         swipeRefreshLayout.setColorSchemeResources(com.google.android.material.R.color.design_default_color_primary)
@@ -65,7 +67,7 @@ class FeedFragment : Fragment() {
             homeViewModel.refresh(category)
         }
 
-        // 3. 初始化 RecyclerView
+        // 初始化 RecyclerView
         feedRecyclerView = view.findViewById(R.id.recyclerview_feed)
         val layoutManager = StaggeredGridLayoutManager(2, StaggeredGridLayoutManager.VERTICAL)
         feedRecyclerView.layoutManager = layoutManager
@@ -127,7 +129,7 @@ class FeedFragment : Fragment() {
             }
         })
 
-        // 5. 观察数据
+        // 观察数据
         observeData()
 
         // 初始加载
@@ -152,7 +154,7 @@ class FeedFragment : Fragment() {
 
         // 观察加载状态 -> 控制刷新动画的显示与隐藏
         homeViewModel.getLoadingState(category).observe(viewLifecycleOwner) { isLoading ->
-            // 修改这里：不仅处理结束，也要处理开始
+            // 不仅处理结束，也要处理开始
             if (isLoading) {
                 // 如果正在后台自动刷新，且用户没有在手势拖拽，则显示刷新球
                 if (!swipeRefreshLayout.isRefreshing) {

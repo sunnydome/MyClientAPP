@@ -1,21 +1,21 @@
 package com.example.myapp.ui.home
 
-import android.app.Application
-import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MediatorLiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.viewModelScope
-import com.example.myapp.data.database.AppDatabase
 import com.example.myapp.data.model.FeedItem
 import com.example.myapp.data.repository.PostRepository
 import kotlinx.coroutines.launch
 import kotlin.math.max
+import androidx.lifecycle.ViewModel
+import dagger.hilt.android.lifecycle.HiltViewModel
+import javax.inject.Inject
 
-class HomeViewModel(application: Application) : AndroidViewModel(application) {
-
-    private val database: AppDatabase = AppDatabase.getInstance(application)
-    private val postRepository: PostRepository = PostRepository.getInstance(database)
+@HiltViewModel
+class HomeViewModel @Inject constructor(
+    private val postRepository: PostRepository // Hilt 自动注入这个
+) : ViewModel() {
 
     private val _currentCategory = MutableLiveData<String>("发现")
     val currentCategory: LiveData<String> = _currentCategory
@@ -42,7 +42,7 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
 
     /**
      * 获取 Feed 列表
-     * [关键修复 2] 返回类型改为 LiveData<MutableList<FeedItem>>
+     * 返回类型改为 LiveData<MutableList<FeedItem>>
      * 虽然 UI 只需要 List，但为了类型匹配，这里直接返回 MutableList 也是兼容的
      */
     fun getFeedsByCategory(category: String): LiveData<MutableList<FeedItem>> {
@@ -51,7 +51,7 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
             val dbSource = postRepository.getFeedsByCategory(category) // 这里返回的是 List
 
             mediator.addSource(dbSource) { list ->
-                // [关键修复 3] 将只读 List 转换为可变 ArrayList，这样后续才能修改
+                // 将只读 List 转换为可变 ArrayList，这样后续才能修改
                 mediator.value = ArrayList(list)
             }
             mediator

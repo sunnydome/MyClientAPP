@@ -13,12 +13,13 @@ import com.example.myapp.ui.market.MarketFragment
 import com.example.myapp.ui.message.MessageFragment
 import com.example.myapp.ui.profile.ProfileFragment
 import com.example.myapp.ui.publish.PublishActivity
+import dagger.hilt.android.AndroidEntryPoint
 
-/**
- * 主Activity - 仿小红书纯文字底部导航
- */
+@AndroidEntryPoint
 class MainActivity : FragmentActivity() {
 
+    // 底部fragment
+    // 让代码更简洁，避免了无休止的判空操作（null checks）。
     private lateinit var navHome: TextView
     private lateinit var navMarket: TextView
     private lateinit var navMessage: TextView
@@ -37,6 +38,7 @@ class MainActivity : FragmentActivity() {
         }
 
         initViews()
+
         setupBackPressed()
 
         if (savedInstanceState == null) {
@@ -46,6 +48,7 @@ class MainActivity : FragmentActivity() {
         }
     }
 
+    // 初始化主页的几个Fragments
     private fun initViews() {
         navHome = findViewById(R.id.nav_home)
         navMarket = findViewById(R.id.nav_market)
@@ -85,6 +88,7 @@ class MainActivity : FragmentActivity() {
         currentNavId = navId
     }
 
+    // 以内存换体验
     private fun showFragment(navId: Int) {
         val fragment = getOrCreateFragment(navId)
         val transaction = supportFragmentManager.beginTransaction()
@@ -100,7 +104,7 @@ class MainActivity : FragmentActivity() {
         } else {
             transaction.add(R.id.fragment_container, fragment)
         }
-
+        // 开始执行事务
         transaction.commitNowAllowingStateLoss()
     }
 
@@ -116,12 +120,15 @@ class MainActivity : FragmentActivity() {
         }
     }
 
+    // 如果不在首页->返回首页
+    // 如果在首页->返回主界面
     private fun setupBackPressed() {
         onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
             override fun handleOnBackPressed() {
                 if (currentNavId != R.id.nav_home) {
                     selectNav(R.id.nav_home)
                 } else {
+                    // 关闭当前对回调事件的拦截
                     isEnabled = false
                     onBackPressedDispatcher.onBackPressed()
                 }
@@ -129,6 +136,7 @@ class MainActivity : FragmentActivity() {
         })
     }
 
+    //启动发布页， 同时添加动画
     private fun startPublishActivity() {
         val intent = Intent(this, PublishActivity::class.java)
         val options = ActivityOptions.makeCustomAnimation(
@@ -138,7 +146,9 @@ class MainActivity : FragmentActivity() {
     }
 
     override fun onSaveInstanceState(outState: Bundle) {
+        // 这行代码会让 Android 自动帮你保存界面上的一些标准状态
         super.onSaveInstanceState(outState)
+        // 把当前的导航栏 ID (currentNavId) 放进去，贴上标签 KEY_CURRENT_NAV。
         outState.putInt(KEY_CURRENT_NAV, currentNavId)
     }
 

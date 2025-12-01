@@ -6,13 +6,16 @@ import com.example.myapp.data.database.AppDatabase
 import com.example.myapp.data.model.Draft
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-
+import javax.inject.Inject
+import javax.inject.Singleton
 /**
  * 草稿数据仓库
  * 负责草稿的本地存储
  */
-class DraftRepository(private val database: AppDatabase) {
-
+@Singleton
+class DraftRepository @Inject constructor(
+    private val database: AppDatabase
+) {
     private val draftDao = database.draftDao()
 
     /**
@@ -109,16 +112,4 @@ class DraftRepository(private val database: AppDatabase) {
         }
     }
 
-    companion object {
-        @Volatile
-        private var INSTANCE: DraftRepository? = null
-
-        fun getInstance(database: AppDatabase): DraftRepository {
-            return INSTANCE ?: synchronized(this) {
-                val instance = DraftRepository(database)
-                INSTANCE = instance
-                instance
-            }
-        }
-    }
 }

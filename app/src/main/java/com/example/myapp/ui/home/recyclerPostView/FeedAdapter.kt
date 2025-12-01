@@ -94,10 +94,10 @@ class FeedAdapter(
             likeButton?.let { button ->
                 button.isSelected = feed.isLiked
                 button.setOnClickListener {
-                    // [新增] 1. 立即更新 UI 状态
+                    // 立即更新 UI 状态
                     button.isSelected = !button.isSelected
 
-                    // [新增] 2. 立即更新数字 (假装成功)
+                    // 立即更新数字 (假装成功)
                     likeCount?.let { tv ->
                         val currentStr = tv.text.toString()
                         // 简单解析处理，如果是 "1.2w" 这种复杂格式可能需要更复杂的逻辑
@@ -109,7 +109,7 @@ class FeedAdapter(
                         }
                     }
 
-                    // 3. 触发回调 (去 ViewModel 发请求 & 改内存数据)
+                    // 触发回调 (去 ViewModel 发请求 & 改内存数据)
                     onLikeClick?.invoke(feed)
                 }
             }

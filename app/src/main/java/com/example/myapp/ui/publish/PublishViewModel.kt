@@ -1,35 +1,27 @@
 package com.example.myapp.ui.publish
 
-import android.app.Application
-import android.content.Context
-import android.graphics.BitmapFactory
 import android.net.Uri
-import android.util.Log
-import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
+import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.myapp.data.database.AppDatabase
 import com.example.myapp.data.model.Post
 import com.example.myapp.data.repository.DraftRepository
 import com.example.myapp.data.repository.PostRepository
 import com.example.myapp.data.repository.UserRepository
-import com.example.myapp.data.network.RetrofitClient
-import kotlinx.coroutines.Dispatchers
+import com.example.myapp.data.repository.FileRepository
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
-import java.io.File
-import java.io.FileOutputStream
-import java.util.UUID
+import javax.inject.Inject
+import dagger.hilt.android.lifecycle.HiltViewModel
 
-class PublishViewModel(application: Application) : AndroidViewModel(application) {
+@HiltViewModel
+class PublishViewModel @Inject constructor(
+    private val postRepository: PostRepository,
+    private val draftRepository: DraftRepository,
+    private val userRepository: UserRepository,
+    private val fileRepository: FileRepository
+): ViewModel(){
 
-    // ... (保留原有的变量声明: database, repositories, fileApi, constants ...)
-    private val database: AppDatabase = AppDatabase.getInstance(application)
-    private val postRepository: PostRepository = PostRepository.getInstance(database)
-    private val draftRepository: DraftRepository = DraftRepository.getInstance(database)
-    private val userRepository: UserRepository = UserRepository.getInstance(database)
-    private val fileApi = RetrofitClient.fileApi
 
     companion object {
         const val MAX_IMAGE_COUNT = 9
@@ -67,7 +59,6 @@ class PublishViewModel(application: Application) : AndroidViewModel(application)
     private val _saveDraftEvent = MutableLiveData<Any?>()
     val saveDraftEvent: LiveData<Any?> = _saveDraftEvent
 
-    // ... (保留 addImages, removeImage, updateTitle 等基础 UI 逻辑) ...
     fun addImages(uris: List<Uri>) {
         val currentImages = _selectedImages.value ?: emptyList()
         val newImages = (currentImages + uris).take(MAX_IMAGE_COUNT)
@@ -127,7 +118,7 @@ class PublishViewModel(application: Application) : AndroidViewModel(application)
         viewModelScope.launch {
             _isLoading.value = true
 
-            // 1. 获取用户信息
+            // 获取用户信息
             val currentUser = userRepository.getCurrentUserSync() ?: run {
                 userRepository.refreshCurrentUser().getOrNull()
             }
@@ -136,18 +127,18 @@ class PublishViewModel(application: Application) : AndroidViewModel(application)
                 id = "local_user", userName = "我", avatarUrl = "", bio = ""
             )
 
-            // 2. 处理图片 (复制到私有目录 + 计算宽高比)
+            // 处理图片 (复制到私有目录 + 计算宽高比)
             val localUris = _selectedImages.value ?: emptyList()
             var savedImagePaths: List<String> = emptyList()
             var coverRatio = 1.0f // 默认 1:1
 
             if (localUris.isNotEmpty()) {
                 // 将图片复制到 APP 私有目录，生成 file:// 路径
-                savedImagePaths = copyImagesToAppStorage(localUris)
+                savedImagePaths = fileRepository.copyImagesToAppStorage(localUris)
 
                 // 计算第一张图片的宽高比，用于瀑布流布局
                 // 解决布局重叠的关键！
-                coverRatio = calculateImageAspectRatio(localUris.first())
+                coverRatio = fileRepository.calculateImageAspectRatio(localUris.first())
             }
 
             // 3. 构建 Post 对象
@@ -187,71 +178,6 @@ class PublishViewModel(application: Application) : AndroidViewModel(application)
                     _publishEvent.value = PublishEvent.Error(error.message ?: "发布失败")
                 }
             )
-        }
-    }
-
-    /**
-     * 将 Uri 对应的图片复制到应用私有目录下
-     * 解决：跨页面/重启后图片无法加载的问题
-     */
-    private suspend fun copyImagesToAppStorage(uris: List<Uri>): List<String> {
-        return withContext(Dispatchers.IO) {
-            val context = getApplication<Application>()
-            val paths = mutableListOf<String>()
-
-            // 创建专门存放发布图片的目录
-            val imagesDir = File(context.filesDir, "published_images")
-            if (!imagesDir.exists()) imagesDir.mkdirs()
-
-            for (uri in uris) {
-                try {
-                    // 生成唯一文件名
-                    val fileName = "img_${System.currentTimeMillis()}_${UUID.randomUUID()}.jpg"
-                    val destFile = File(imagesDir, fileName)
-
-                    // 复制文件流
-                    context.contentResolver.openInputStream(uri)?.use { input ->
-                        FileOutputStream(destFile).use { output ->
-                            input.copyTo(output)
-                        }
-                    }
-                    // 返回 file:// 路径
-                    paths.add(destFile.absolutePath)
-                } catch (e: Exception) {
-                    Log.e(TAG, "复制图片失败: $uri", e)
-                    // 如果复制失败，回退到原始 Uri (虽然可能加载失败，但总比没有好)
-                    paths.add(uri.toString())
-                }
-            }
-            paths
-        }
-    }
-
-    /**
-     * 计算图片宽高比 (Width / Height)
-     * 解决：瀑布流布局错乱/重叠问题
-     */
-    private suspend fun calculateImageAspectRatio(uri: Uri): Float {
-        return withContext(Dispatchers.IO) {
-            try {
-                val context = getApplication<Application>()
-                val options = BitmapFactory.Options()
-                // 只解码边界，不加载整个图片到内存，速度快
-                options.inJustDecodeBounds = true
-
-                context.contentResolver.openInputStream(uri)?.use {
-                    BitmapFactory.decodeStream(it, null, options)
-                }
-
-                if (options.outWidth > 0 && options.outHeight > 0) {
-                    options.outWidth.toFloat() / options.outHeight.toFloat()
-                } else {
-                    1.0f // 默认比例
-                }
-            } catch (e: Exception) {
-                Log.e(TAG, "计算比例失败", e)
-                1.0f
-            }
         }
     }
 
@@ -313,7 +239,7 @@ class PublishViewModel(application: Application) : AndroidViewModel(application)
      * 从草稿恢复内容（兼容传递对象的方式）
      */
     fun loadFromDraft(draft: com.example.myapp.ui.publish.model.PublishPost) {
-        // 这里只是为了兼容旧代码的数据类，如果已经全面转用 Draft 实体，可以移除此方法
+        // 为了兼容旧代码的数据类，如果已经全面转用 Draft 实体，可以移除此方法
         _selectedImages.value = draft.imageUris
         _title.value = draft.title
         _content.value = draft.content

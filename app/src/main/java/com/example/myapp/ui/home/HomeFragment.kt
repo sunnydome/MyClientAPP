@@ -10,10 +10,12 @@ import androidx.viewpager2.widget.ViewPager2
 import com.example.myapp.R
 import com.google.android.material.tabs.TabLayout
 import com.google.android.material.tabs.TabLayoutMediator
+import dagger.hilt.android.AndroidEntryPoint
 
 /**
  * 首页Fragment - 包含Tab切换（关注、发现、同城）
  */
+@AndroidEntryPoint
 class HomeFragment : Fragment() {
 
     private lateinit var viewPager: ViewPager2
@@ -58,7 +60,7 @@ class HomeFragment : Fragment() {
         pagerAdapter = HomePagerAdapter(this, categories)
         viewPager.adapter = pagerAdapter
 
-        // 修改点：设置为 Tab 总数 - 1，或者直接设为 2
+        // 设置为 Tab 总数 - 1，或者直接设为 2
         // 这样“关注”、“发现”、“同城”三个页面都会一直保存在内存中，不会销毁 View
         viewPager.offscreenPageLimit = categories.size
 

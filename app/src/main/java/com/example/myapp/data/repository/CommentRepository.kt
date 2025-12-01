@@ -3,15 +3,20 @@ package com.example.myapp.data.repository
 import androidx.lifecycle.LiveData
 import com.example.myapp.data.database.AppDatabase
 import com.example.myapp.data.model.Comment
-import com.example.myapp.data.network.RetrofitClient
+import com.example.myapp.data.network.api.CommentApi
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import javax.inject.Inject
+import javax.inject.Singleton
 
-class CommentRepository(private val database: AppDatabase) {
+@Singleton
+class CommentRepository @Inject constructor(
+    private val database: AppDatabase,
+    private val commentApi : CommentApi
+) {
 
     private val commentDao = database.commentDao()
     private val postDao = database.postDao()
-    private val commentApi = RetrofitClient.commentApi // 获取 API
 
     /**
      * 获取帖子的一级评论 (观察本地)
@@ -113,15 +118,15 @@ class CommentRepository(private val database: AppDatabase) {
     suspend fun deleteComment(commentId: String): Result<Unit> {
         return withContext(Dispatchers.IO) {
             try {
-                // 1. 先查询本地评论，为了后续更新计数
+                // 先查询本地评论，为了后续更新计数
                 val comment = commentDao.getCommentByIdSync(commentId)
                     ?: return@withContext Result.failure(Exception("本地评论不存在"))
 
-                // 2. 调用网络删除接口
+                // 调用网络删除接口
                 val response = commentApi.deleteComment(commentId)
 
                 if (response.isSuccess()) {
-                    // 3. 网络删除成功后，清理本地数据
+                    // 网络删除成功后，清理本地数据
                     // 逻辑与旧版本一致：如果是以及评论，要连带删除回复；更新帖子评论数
                     if (comment.isTopLevel()) {
                         val replyCount = commentDao.getReplyCount(commentId)
@@ -143,19 +148,6 @@ class CommentRepository(private val database: AppDatabase) {
                 }
             } catch (e: Exception) {
                 Result.failure(e)
-            }
-        }
-    }
-
-    companion object {
-        @Volatile
-        private var INSTANCE: CommentRepository? = null
-
-        fun getInstance(database: AppDatabase): CommentRepository {
-            return INSTANCE ?: synchronized(this) {
-                val instance = CommentRepository(database)
-                INSTANCE = instance
-                instance
             }
         }
     }

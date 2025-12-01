@@ -4,14 +4,18 @@ import android.util.Log
 import androidx.lifecycle.LiveData
 import com.example.myapp.data.database.AppDatabase
 import com.example.myapp.data.model.User
-import com.example.myapp.data.network.RetrofitClient
+import com.example.myapp.data.network.api.UserApi
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import javax.inject.Inject
+import javax.inject.Singleton
 
-class UserRepository(private val database: AppDatabase) {
-
+@Singleton
+class UserRepository @Inject constructor(
+    private val database: AppDatabase,
+    private val userApi : UserApi
+){
     private val userDao = database.userDao()
-    private val userApi = RetrofitClient.userApi
 
     // 内存缓存当前用户ID，实际项目中建议存放在 SharedPreferences/DataStore 中
     private var currentUserId: String? = null
@@ -28,8 +32,7 @@ class UserRepository(private val database: AppDatabase) {
      * 获取当前用户信息 (观察本地)
      */
     fun getCurrentUser(): LiveData<User?> {
-        // 假设我们总是查询 ID 为 "me" 或者根据真实 ID 查询
-        // 这里简化逻辑：先用 getCurrentUserId()
+        // 先用 getCurrentUserId()
         return userDao.getUserById(getCurrentUserId())
     }
 
@@ -59,10 +62,10 @@ class UserRepository(private val database: AppDatabase) {
 
                 if (response.isSuccess() && response.data != null) {
                     val user = response.data
-                    // 1. 更新内存ID
+                    // 更新内存ID
                     currentUserId = user.id
 
-                    // 2. 存入数据库 (这样下次 getCurrentUserSync 就能拿到了)
+                    // 存入数据库 (这样下次 getCurrentUserSync 就能拿到了)
                     userDao.insert(user)
 
                     Result.success(user)
@@ -96,16 +99,4 @@ class UserRepository(private val database: AppDatabase) {
         }
     }
 
-    companion object {
-        @Volatile
-        private var INSTANCE: UserRepository? = null
-
-        fun getInstance(database: AppDatabase): UserRepository {
-            return INSTANCE ?: synchronized(this) {
-                val instance = UserRepository(database)
-                INSTANCE = instance
-                instance
-            }
-        }
-    }
 }

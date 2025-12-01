@@ -1,26 +1,26 @@
 package com.example.myapp.ui.post
 
-import android.app.Application
-import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MediatorLiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.switchMap
 import androidx.lifecycle.viewModelScope
-import com.example.myapp.data.database.AppDatabase
+import androidx.lifecycle.ViewModel
 import com.example.myapp.data.model.Comment
 import com.example.myapp.data.model.Post
 import com.example.myapp.data.repository.CommentRepository
 import com.example.myapp.data.repository.PostRepository
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
+import javax.inject.Inject
 
-class PostViewModel(application: Application) : AndroidViewModel(application) {
-
-    private val database: AppDatabase = AppDatabase.getInstance(application)
-    private val postRepository: PostRepository = PostRepository.getInstance(database)
-    private val commentRepository: CommentRepository = CommentRepository.getInstance(database)
+@HiltViewModel
+class PostViewModel @Inject constructor(
+    private val postRepository: PostRepository,
+    private val commentRepository: CommentRepository
+): ViewModel(){
 
 
     // 帖子详情 (观察本地数据库)

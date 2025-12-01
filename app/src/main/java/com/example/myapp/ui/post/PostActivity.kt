@@ -21,10 +21,12 @@ import com.example.myapp.ui.post.recyclerCommentView.CommentDividerDecoration
 import com.example.myapp.ui.post.recyclerCommentView.FooterAdapter
 import com.example.myapp.ui.imageviewer.ImageViewerActivity
 import androidx.core.view.ViewCompat
+import dagger.hilt.android.AndroidEntryPoint
 
 /**
  * 帖子详情页
  */
+@AndroidEntryPoint
 class PostActivity : AppCompatActivity() {
 
     companion object {
@@ -37,8 +39,7 @@ class PostActivity : AppCompatActivity() {
     private lateinit var recyclerView: RecyclerView
     private lateinit var etComment: EditText
 
-    // [重要] 这里是新的变量，对应 xml 中的 btn_like, btn_collect, btn_comment
-    // 请确保删除了旧的 layoutLike, ivLike 等变量
+    // 这里是新的变量，对应 xml 中的 btn_like, btn_collect, btn_comment
     private lateinit var btnLike: TextView
     private lateinit var btnCollect: TextView
     private lateinit var btnComment: TextView
@@ -97,7 +98,7 @@ class PostActivity : AppCompatActivity() {
         recyclerView = findViewById(R.id.recyclerview_post)
         etComment = findViewById(R.id.comment_input)
 
-        // [重要] 绑定新的 ID (对应 activity_post.xml 中的 ID)
+        // 绑定新的 ID (对应 activity_post.xml 中的 ID)
         btnLike = findViewById(R.id.btn_like)
         btnCollect = findViewById(R.id.btn_collect)
         btnComment = findViewById(R.id.btn_comment)
@@ -106,7 +107,7 @@ class PostActivity : AppCompatActivity() {
         headerAdapter = PostHeaderAdapter(
             targetTransitionName = imageTransName,
             onBackClick = { onBackPressedDispatcher.onBackPressed() },
-            // [重要] 使用 toggleFollow
+            // 使用 toggleFollow
             onFollowClick = { postViewModel.toggleFollow() },
             onShareClick = { Toast.makeText(this, "分享功能开发中", Toast.LENGTH_SHORT).show() },
             onAvatarClick = { /* 跳转用户主页 */ },
@@ -160,28 +161,28 @@ class PostActivity : AppCompatActivity() {
             }
         }
 
-        // [重要] 监听新的 TextView 按钮
+        // 监听新的 TextView 按钮
         btnLike.setOnClickListener {
-            // 1. UI 立即变色
+            // UI 立即变色
             btnLike.isSelected = !btnLike.isSelected
-            // 2. UI 数字更新 (简单的 +/- 1 逻辑)
+            // UI 数字更新 (简单的 +/- 1 逻辑)
             val currentCount = btnLike.text.toString().toIntOrNull() ?: 0
             val newCount = if (btnLike.isSelected) currentCount + 1 else (currentCount - 1).coerceAtLeast(0)
             btnLike.text = if (newCount > 0) newCount.toString() else "赞"
 
-            // 3. 发送请求 (后台静默执行)
+            // 发送请求 (后台静默执行)
             postViewModel.toggleLike()
         }
 
         btnCollect.setOnClickListener {
-            // 1. UI 立即变色
+            // UI 立即变色
             btnCollect.isSelected = !btnCollect.isSelected
-            // 2. UI 数字更新
+            // UI 数字更新
             val currentCount = btnCollect.text.toString().toIntOrNull() ?: 0
             val newCount = if (btnCollect.isSelected) currentCount + 1 else (currentCount - 1).coerceAtLeast(0)
             btnCollect.text = if (newCount > 0) newCount.toString() else "收藏"
 
-            // 3. 发送请求
+            // 发送请求
             postViewModel.toggleCollect()
         }
 
@@ -195,7 +196,7 @@ class PostActivity : AppCompatActivity() {
         postViewModel.post.observe(this) { post ->
             post?.let {
                 headerAdapter.setPost(it)
-                // [重要] 更新底部状态
+                // 更新底部状态
                 updateBottomBar(it)
             }
         }
@@ -228,7 +229,7 @@ class PostActivity : AppCompatActivity() {
     }
 
     /**
-     * [重要] 更新底部栏 UI
+     * 更新底部栏 UI
      * TextView 的 isSelected 会自动触发图标变色
      */
     private fun updateBottomBar(post: Post) {

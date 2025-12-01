@@ -5,7 +5,6 @@ import android.os.Build
 import android.os.Bundle
 import android.text.Editable
 import android.text.TextWatcher
-import android.util.Log
 import android.view.View
 import android.widget.EditText
 import android.widget.TextView
@@ -18,11 +17,13 @@ import androidx.recyclerview.widget.RecyclerView
 import com.example.myapp.R
 import com.example.myapp.ui.publish.adapter.ImagePickerAdapter
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
+import dagger.hilt.android.AndroidEntryPoint
 
 /**
  * 发布Activity - 独立的发布页面
  * 使用MVVM架构管理发布内容
  */
+@AndroidEntryPoint
 class PublishActivity : FragmentActivity() {
 
     private lateinit var viewModel: PublishViewModel

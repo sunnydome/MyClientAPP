@@ -11,7 +11,7 @@ import androidx.viewpager2.adapter.FragmentStateAdapter
  * 因为 HomeFragment 内部需要嵌套 ViewPager2
  */
 class HomePagerAdapter(
-    fragment: Fragment,  // ← 改为接收 Fragment
+    fragment: Fragment,  // 接收 Fragment
     private val categories: List<String>
 ) : FragmentStateAdapter(fragment) {  // ← 传入 Fragment
 
