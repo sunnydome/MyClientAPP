@@ -11,6 +11,7 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.fragment.app.FragmentActivity
+import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -272,6 +273,8 @@ class PublishActivity : FragmentActivity() {
                     viewModel.saveDraft()
                 }
                 .setNegativeButton("放弃") { _, _ ->
+                    Toast.makeText(this, "草稿已删除", Toast.LENGTH_SHORT).show()
+                    viewModel.draftEventHandled()
                     finish()
                 }
                 .setNeutralButton("取消", null)

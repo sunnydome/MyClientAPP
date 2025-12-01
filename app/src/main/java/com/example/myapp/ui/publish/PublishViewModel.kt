@@ -258,7 +258,9 @@ class PublishViewModel @Inject constructor(
     }
 
     fun draftEventHandled() {
-        _saveDraftEvent.value = null
+        viewModelScope.launch {
+            draftRepository.deleteDraft()
+        }
     }
 
     // ========== 工具方法 ==========
