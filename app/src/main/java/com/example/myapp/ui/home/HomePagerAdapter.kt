@@ -6,8 +6,7 @@ import androidx.viewpager2.adapter.FragmentStateAdapter
 /**
  * ViewPager2 的 Adapter
  * 用于管理不同Tab对应的Fragment
- *
- * 注意：现在接收 Fragment 作为参数（而不是 FragmentActivity）
+ * 接收 Fragment 作为参数
  * 因为 HomeFragment 内部需要嵌套 ViewPager2
  */
 class HomePagerAdapter(

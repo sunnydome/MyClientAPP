@@ -35,7 +35,6 @@ class PostViewModel @Inject constructor(
         get() = _postId.value
 
     // 评论列表 (观察本地数据库)
-    private val _comments = MutableLiveData<List<Comment>>()
     val comments: LiveData<List<Comment>> = _postId.switchMap { id ->
         commentRepository.getTopLevelComments(id)
     }
@@ -92,10 +91,12 @@ class PostViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 coroutineScope {
+                    // 并行执行两个异步任务
                     val deferredPost = async { postRepository.fetchPostDetail(postId) }
                     // 调用 Repository，获取第一页数据
                     val deferredComments = async { commentRepository.refreshComments(postId, 1) }
 
+                    // 等待结果返回
                     val postResult = deferredPost.await()
                     val commentResult = deferredComments.await()
 
@@ -141,7 +142,7 @@ class PostViewModel @Inject constructor(
         }
     }
 
-    // [核心修改] 纯网络请求，不更新 LiveData
+    // 纯网络请求，不更新 LiveData
     fun toggleLike() {
         val currentPost = _post.value ?: return
         viewModelScope.launch {
@@ -149,7 +150,7 @@ class PostViewModel @Inject constructor(
         }
     }
 
-    // [核心修改] 纯网络请求，不更新 LiveData
+    // 纯网络请求，不更新 LiveData
     fun toggleCollect() {
         val currentPost = _post.value ?: return
         viewModelScope.launch {
@@ -157,7 +158,7 @@ class PostViewModel @Inject constructor(
         }
     }
 
-    // [核心修改] 纯网络请求
+    // 纯网络请求
     fun toggleFollow() {
         // 假设 Repository 有 toggleFollow
         // viewModelScope.launch { postRepository.toggleFollow(...) }

@@ -25,12 +25,13 @@ class FeedFragment : Fragment() {
     private lateinit var feedRecyclerView: RecyclerView
     private lateinit var feedAdapter: FeedAdapter
     private lateinit var homeViewModel: HomeViewModel
-    private lateinit var swipeRefreshLayout: SwipeRefreshLayout // [新增变量]
+    private lateinit var swipeRefreshLayout: SwipeRefreshLayout
 
     private var category: String = ""
 
     companion object {
         private const val ARG_CATEGORY = "category"
+
         fun newInstance(category: String): FeedFragment {
             val fragment = FeedFragment()
             val args = Bundle()
@@ -74,11 +75,12 @@ class FeedFragment : Fragment() {
 
         feedAdapter = FeedAdapter(
             onItemClick = { feedItem, sharedImageView ->
-                // ... (保持原本的跳转逻辑不变) ...
+                // 把数据存入 Intent 内部的 Bundle
                 val intent = Intent(requireContext(), PostActivity::class.java).apply {
                     putExtra(PostActivity.EXTRA_POST_ID, feedItem.id)
                     putExtra("extra_trans_name_image", ViewCompat.getTransitionName(sharedImageView))
                 }
+                // 实现共享资源转场
                 val options = ActivityOptionsCompat.makeSceneTransitionAnimation(
                     requireActivity(),
                     Pair.create(sharedImageView, ViewCompat.getTransitionName(sharedImageView))
@@ -90,6 +92,7 @@ class FeedFragment : Fragment() {
             }
         )
         feedRecyclerView.adapter = feedAdapter
+
         // 监听数据插入，自动滚动到顶部
         feedAdapter.registerAdapterDataObserver(object : RecyclerView.AdapterDataObserver() {
             override fun onItemRangeInserted(positionStart: Int, itemCount: Int) {

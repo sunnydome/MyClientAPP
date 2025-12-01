@@ -39,7 +39,7 @@ class PostActivity : AppCompatActivity() {
     private lateinit var recyclerView: RecyclerView
     private lateinit var etComment: EditText
 
-    // 这里是新的变量，对应 xml 中的 btn_like, btn_collect, btn_comment
+    // 对应 xml 中的 btn_like, btn_collect, btn_comment
     private lateinit var btnLike: TextView
     private lateinit var btnCollect: TextView
     private lateinit var btnComment: TextView
@@ -77,6 +77,7 @@ class PostActivity : AppCompatActivity() {
         postViewModel.loadPost(postId)
     }
 
+    // 只有当 ViewPager 显示的不是第 1 张图才执行转场动画
     private fun setupSharedElementCallback() {
         setEnterSharedElementCallback(object : SharedElementCallback() {
             override fun onMapSharedElements(
@@ -154,7 +155,10 @@ class PostActivity : AppCompatActivity() {
     private fun setupListeners() {
         etComment.setOnEditorActionListener { _, actionId, _ ->
             if (actionId == EditorInfo.IME_ACTION_SEND || actionId == EditorInfo.IME_ACTION_DONE) {
-                sendComment()
+                // TODO:实现发送评论的完整逻辑后再调用
+                Toast.makeText(this, "评论功能暂未完全开发", Toast.LENGTH_SHORT).show()
+                hideKeyboard()
+                //sendComment()
                 true
             } else {
                 false
@@ -270,6 +274,7 @@ class PostActivity : AppCompatActivity() {
         )
     }
 
+    // 打开全屏图片查看器
     private fun openImageViewer(position: Int, imageView: ImageView) {
         val post = postViewModel.post.value ?: return
         val imageUrls = post.imageUrls.ifEmpty { listOf(post.coverUrl) }

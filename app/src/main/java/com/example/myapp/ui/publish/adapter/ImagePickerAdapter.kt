@@ -17,7 +17,7 @@ import com.example.myapp.R
  */
 class ImagePickerAdapter(
     private val onAddClick: () -> Unit,
-    private val onImageClick: (Int, Uri) -> Unit,
+    private val onImageClick: (Int, Uri, View) -> Unit,
     private val onRemoveClick: (Int) -> Unit
 ) : ListAdapter<ImagePickerItem, RecyclerView.ViewHolder>(ImageDiffCallback()) {
 
@@ -75,7 +75,7 @@ class ImagePickerAdapter(
                 // 获取实时位置
                 val currentPos = bindingAdapterPosition
                 if (currentPos != RecyclerView.NO_POSITION) {
-                    onImageClick(currentPos, uri)
+                    onImageClick(currentPos, uri, imageView)
                 }
             }
 

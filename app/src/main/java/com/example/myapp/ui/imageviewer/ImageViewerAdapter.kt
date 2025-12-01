@@ -71,7 +71,6 @@ class ImageViewerAdapter(
     class ImageViewerViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
 
         private val photoView: DragPhotoView = itemView.findViewById(R.id.photo_view)
-
         fun bind(
             url: String,
             transitionName: String?,

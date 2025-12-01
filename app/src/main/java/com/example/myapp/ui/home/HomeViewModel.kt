@@ -58,6 +58,7 @@ class HomeViewModel @Inject constructor(
         }
     }
 
+    //  加载对应页面的数据
     fun loadDataForTab(category: String) {
         _currentCategory.value = category
         if (pageCache[category] == null) refresh(category)
@@ -65,6 +66,7 @@ class HomeViewModel @Inject constructor(
 
     fun refresh(category: String) {
         if (isLoading(category)) return
+        // 在后台线程启动一个协程来进行网络请求，自动防止内存泄漏
         viewModelScope.launch {
             setLoading(category, true)
             _error.value = null
@@ -85,7 +87,15 @@ class HomeViewModel @Inject constructor(
         viewModelScope.launch {
             val result = postRepository.fetchFeeds(category, page = nextPage)
             loadingMoreStateMap[category] = false
-            result.onSuccess { pageCache[category] = nextPage }
+            result.fold(
+                onSuccess = {
+                    pageCache[category] = nextPage
+                },
+                onFailure = { e ->
+                    // 发送错误事件，让 Fragment 弹 Toast
+                    _error.value = "加载更多失败: ${e.message}"
+                }
+            )
         }
     }
 

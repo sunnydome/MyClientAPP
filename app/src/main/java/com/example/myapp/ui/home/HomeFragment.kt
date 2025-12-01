@@ -56,7 +56,6 @@ class HomeFragment : Fragment() {
     private fun initViewPager(view: View) {
         viewPager = view.findViewById(R.id.view_pager)
 
-        // 注意：这里使用 childFragmentManager，而不是 requireActivity().supportFragmentManager
         pagerAdapter = HomePagerAdapter(this, categories)
         viewPager.adapter = pagerAdapter
 

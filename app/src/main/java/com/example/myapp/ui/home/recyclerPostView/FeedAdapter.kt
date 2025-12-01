@@ -52,13 +52,11 @@ class FeedAdapter(
         private val titleText: TextView = itemView.findViewById(R.id.item_title)
         private val userNameText: TextView = itemView.findViewById(R.id.item_user_name)
         private val userAvatar: ImageView = itemView.findViewById(R.id.item_user_avatar)
-        // 可选的点赞按钮和计数（如果布局中有的话）
-        // TODO: 添加点赞按钮
         private val likeButton: ImageView? = itemView.findViewById(R.id.item_like_button)
         private val likeCount: TextView? = itemView.findViewById(R.id.item_like_count)
 
         fun bind(feed: FeedItem) {
-            // 1. 动态设置图片的高度比例 (实现瀑布流的核心)
+            // 动态设置图片的高度比例 (实现瀑布流的核心)
             val layoutParams = imageView.layoutParams as ConstraintLayout.LayoutParams
 
             // 设置宽高比。DimensionRatio 格式通常为 "width:height" 或者直接是一个浮点数代表 w/h
@@ -66,7 +64,7 @@ class FeedAdapter(
             layoutParams.dimensionRatio = String.format("%f:1", feed.coverAspectRatio)
             imageView.layoutParams = layoutParams
 
-            // 2. 加载封面图
+            // 加载封面图
             Glide.with(itemView.context)
                 .load(feed.coverUrl)
                 .placeholder(R.drawable.placeholder_image) // 建议使用纯色背景作为占位图，体验更好
@@ -100,7 +98,6 @@ class FeedAdapter(
                     // 立即更新数字 (假装成功)
                     likeCount?.let { tv ->
                         val currentStr = tv.text.toString()
-                        // 简单解析处理，如果是 "1.2w" 这种复杂格式可能需要更复杂的逻辑
                         // 这里做个简单处理：如果是纯数字才 +/- 1
                         val count = currentStr.toIntOrNull()
                         if (count != null) {
@@ -152,6 +149,7 @@ class FeedAdapter(
 /**
  * DiffUtil回调
  */
+// 告诉适配器旧列表和新列表之间到底发生了什么变化
 class FeedDiffCallback : DiffUtil.ItemCallback<FeedItem>() {
     override fun areItemsTheSame(oldItem: FeedItem, newItem: FeedItem): Boolean {
         return oldItem.id == newItem.id

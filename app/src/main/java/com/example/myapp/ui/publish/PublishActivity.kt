@@ -59,7 +59,7 @@ class PublishActivity : FragmentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        // 设置退出动画（推荐方式）
+        // 设置退出动画
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
             overrideActivityTransition(
                 OVERRIDE_TRANSITION_CLOSE,
@@ -114,10 +114,26 @@ class PublishActivity : FragmentActivity() {
                     ).show()
                 }
             },
-            onImageClick = { position, uri ->
-                // TODO: 考虑是否需要使用toast
-                // 点击图片预览（后续可实现大图预览）
-                Toast.makeText(this, "点击了图片 ${position + 1}", Toast.LENGTH_SHORT).show()
+            onImageClick = { position, _, view ->
+                // 获取当前所有图片的 Uri 列表
+                val uris = viewModel.selectedImages.value ?: emptyList()
+
+                // 将 Uri 转为 String (Glide 支持 content:// 或 file:// 字符串)
+                val imageUrls = uris.map { it.toString() }
+
+                // 设置临时的 TransitionName 以启用动画
+                // 必须给 View 设置一个名字，系统才能找到它
+                val transitionName = "publish_image_$position"
+                androidx.core.view.ViewCompat.setTransitionName(view, transitionName)
+
+                // 启动图片查看器 (复用现有的 ImageViewerActivity)
+                com.example.myapp.ui.imageviewer.ImageViewerActivity.start(
+                    context = this,
+                    imageUrls = imageUrls,       // 传入转换后的列表
+                    currentPosition = position,  // 传入当前点击的位置
+                    sharedElement = view,        // 传入共享元素
+                    transitionName = transitionName // 传入动画名称
+                )
             },
             onRemoveClick = { position ->
                 // 移除图片
