@@ -55,6 +55,13 @@ class FeedFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
+        postponeEnterTransition()
+
+        // 设置一个超时“保底” (非常重要！)
+        // 如果 500ms 后还没准备好（比如图片加载失败），强制开始，防止 PostActivity 内存泄漏
+        view.postDelayed({
+            startPostponedEnterTransition()
+        }, 500)
         // 初始化 ViewModel
         homeViewModel = ViewModelProvider(requireActivity())[HomeViewModel::class.java]
 

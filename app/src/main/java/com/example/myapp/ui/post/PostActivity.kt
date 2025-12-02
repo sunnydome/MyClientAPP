@@ -291,13 +291,28 @@ class PostActivity : AppCompatActivity() {
         )
     }
 
+    override fun onDestroy() {
+        super.onDestroy()
+
+        // 1. 强制隐藏软键盘
+        hideKeyboard()
+
+        // 2. 清除 EditText 焦点，断开 InputMethodManager 的引用
+        etComment.clearFocus()
+
+        // 3. (可选进阶) 彻底断开 View 与 Activity 的连接 (针对极顽固泄漏)
+        // 这种做法通常用于解决 InputMethodManager 导致的泄漏
+        // fixInputMethodManagerLeak(this)
+    }
     private fun showKeyboard() {
         val imm = getSystemService(INPUT_METHOD_SERVICE) as android.view.inputmethod.InputMethodManager
         imm.showSoftInput(etComment, android.view.inputmethod.InputMethodManager.SHOW_IMPLICIT)
     }
 
+    // 确保 hideKeyboard 方法是健壮的
     private fun hideKeyboard() {
         val imm = getSystemService(INPUT_METHOD_SERVICE) as android.view.inputmethod.InputMethodManager
-        imm.hideSoftInputFromWindow(etComment.windowToken, 0)
+        val currentFocus = currentFocus ?: View(this)
+        imm.hideSoftInputFromWindow(currentFocus.windowToken, 0)
     }
 }
