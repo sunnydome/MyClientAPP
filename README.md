@@ -55,8 +55,8 @@ graph TD
 ### 构建步骤
 1.  **克隆仓库**：
     ```bash
-    git clone [https://github.com/your-username/sunny-dome.git](https://github.com/your-username/sunny-dome.git)
-    cd sunny-dome
+    git clone https://github.com/sunnydome/MyClientAPP.git
+    cd MyClientAPP
     ```
 2.  **导入项目**：
     在 Android Studio 中打开项目根目录，等待 Gradle Sync 完成（项目包含 Gradle Wrapper，会自动下载 Gradle 8.13.1）。
