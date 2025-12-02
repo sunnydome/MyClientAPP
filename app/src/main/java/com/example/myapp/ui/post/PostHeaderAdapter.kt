@@ -108,6 +108,7 @@ class PostHeaderAdapter(
                 }
             )
             viewPager2.adapter = pagerAdapter
+            viewPager2.offscreenPageLimit = 3
         }
 
         fun bind(post: Post?) {

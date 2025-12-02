@@ -24,8 +24,6 @@
     <!-- 空状态 -->
     <string name="empty_hint">空状态</string>
     <string name="no_content">暂无内容</string>
-    <!-- TODO: Remove or change this placeholder text -->
-    <string name="hello_blank_fragment">Hello blank fragment</string>
 
     <string name="back">返回</string>
     <string name="share">分享</string>
